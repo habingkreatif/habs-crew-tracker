@@ -23,7 +23,15 @@ export class PrismaAttendanceRepository implements IAttendanceRepository {
     return model ? toDomainEntity(model) : null;
   }
 
-  async findByUserAndDate(userId: string, date: Date): Promise<AttendanceEntity[]> {
+  async findHistoryByUser(userId: string, limitDays: number = 7): Promise<any[]> {
+    const models = await attendanceDatasource.findHistoryByUser(userId, limitDays);
+    return models.map(m => ({
+      ...toDomainEntity(m),
+      namaProyek: (m as any).project?.namaProyek
+    }));
+  }
+
+  async findByUserAndDate(userId: string, date: Date): Promise<any[]> {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     
@@ -31,7 +39,10 @@ export class PrismaAttendanceRepository implements IAttendanceRepository {
     endOfDay.setHours(23, 59, 59, 999);
 
     const models = await attendanceDatasource.findAttendanceByUserAndDate(userId, startOfDay, endOfDay);
-    return models.map(toDomainEntity);
+    return models.map(m => ({
+      ...toDomainEntity(m),
+      project: (m as any).project
+    }));
   }
 
   async create(data: CreateAttendanceData): Promise<AttendanceEntity> {

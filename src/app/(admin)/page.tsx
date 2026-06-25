@@ -2,19 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Building2, TrendingUp, AlertCircle } from 'lucide-react';
-import { useAuthStore } from '@/store/auth.store';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
 export default function AdminDashboard() {
-  const { user, isAuthenticated } = useAuthStore();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (isAuthenticated && user && user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
-      router.push('/home');
-    }
-  }, [isAuthenticated, user, router]);
+  // Auth check and redirect is handled entirely by (admin)/layout.tsx
   const stats = [
     { title: 'Total Proyek Aktif', value: '3', icon: Building2, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/30' },
     { title: 'Mandor Bertugas', value: '5', icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },

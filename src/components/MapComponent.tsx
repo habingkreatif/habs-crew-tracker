@@ -15,13 +15,29 @@ L.Icon.Default.mergeOptions({
 
 // Custom Icon untuk Proyek (opsional, jika ingin berbeda)
 const projectIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowSize: [41, 41]
 });
+
+// Calculate distance using Haversine formula
+function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371e3; // meters
+  const p1 = (lat1 * Math.PI) / 180;
+  const p2 = (lat2 * Math.PI) / 180;
+  const dp = ((lat2 - lat1) * Math.PI) / 180;
+  const dl = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(dp / 2) * Math.sin(dp / 2) +
+    Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) * Math.sin(dl / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
 
 interface MapComponentProps {
   projectLat: number;
@@ -44,8 +60,20 @@ function MapUpdater({ center, zoom }: { center: [number, number], zoom: number }
 export default function MapComponent({ projectLat, projectLng, projectRadius, userLat, userLng, projectName }: MapComponentProps) {
   const projectCenter: [number, number] = [projectLat, projectLng];
   
+  let isWithinRadius = false;
+  let distance = 0;
+  if (userLat !== null && userLng !== null) {
+    distance = getDistance(projectLat, projectLng, userLat, userLng);
+    isWithinRadius = distance <= projectRadius;
+  }
+
+  // Dynamic colors
+  const fillColor = userLat ? (isWithinRadius ? '#22c55e' : '#ef4444') : '#3b82f6';
+  const strokeColor = userLat ? (isWithinRadius ? '#16a34a' : '#b91c1c') : '#2563eb';
+  const glowClass = userLat ? (isWithinRadius ? 'shadow-[0_0_20px_rgba(34,197,94,0.3)] border-green-500/50' : 'shadow-[0_0_20px_rgba(239,68,68,0.3)] border-red-500/50') : 'border-slate-200 dark:border-slate-800';
+
   return (
-    <div className="h-[250px] w-full rounded-xl overflow-hidden shadow-inner border border-slate-200 dark:border-slate-800 relative z-0">
+    <div className={`h-[250px] w-full rounded-2xl overflow-hidden relative z-0 transition-all duration-500 border-2 ${glowClass}`}>
       <MapContainer 
         center={projectCenter} 
         zoom={15} 
@@ -70,7 +98,7 @@ export default function MapComponent({ projectLat, projectLng, projectRadius, us
         {/* Lingkaran Radius Geofence */}
         <Circle 
           center={projectCenter} 
-          pathOptions={{ fillColor: '#22c55e', color: '#16a34a', fillOpacity: 0.2, weight: 2 }} 
+          pathOptions={{ fillColor: fillColor, color: strokeColor, fillOpacity: 0.2, weight: 2 }} 
           radius={projectRadius} 
         />
 

@@ -56,6 +56,8 @@ model Project {
   radiusMeter        Int      @default(50)
   estimasiDurasiHari Int
   status             String   @default("on-track") // on-track, delayed, completed
+  jamKerjaMulai      String   @default("08:00")
+  jamKerjaSelesai    String   @default("17:00")
   createdAt          DateTime @default(now())
 
   // Relasi

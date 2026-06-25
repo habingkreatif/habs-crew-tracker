@@ -12,7 +12,7 @@ interface UseCameraReturn {
   error: string | null;
 }
 
-export function useCamera(): UseCameraReturn {
+export function useCamera(facingMode: 'user' | 'environment' = 'user'): UseCameraReturn {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -23,9 +23,8 @@ export function useCamera(): UseCameraReturn {
   const startCamera = useCallback(async () => {
     try {
       setError(null);
-      // Prefer front camera for selfie
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
+        video: { facingMode },
         audio: false,
       });
 
@@ -38,7 +37,7 @@ export function useCamera(): UseCameraReturn {
       setError('Akses kamera ditolak atau kamera tidak ditemukan.');
       setIsStreaming(false);
     }
-  }, []);
+  }, [facingMode]);
 
   const stopCamera = useCallback(() => {
     if (stream) {

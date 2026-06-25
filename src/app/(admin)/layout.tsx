@@ -2,7 +2,7 @@
 
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LayoutDashboard, Users, Building2, LogOut, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,18 +15,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const supabase = createClient();
 
+  const [isHydrated, setIsHydrated] = useState(false);
+
   useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) return;
     if (!isAuthenticated) {
-      router.push('/login');
+      router.replace('/login');
     } else if (user?.role !== 'ADMIN' && user?.role !== 'SUPERADMIN') {
-      router.push('/home'); // Redirect to mandor if not admin
+      router.replace('/home'); // Redirect to mandor if not admin
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user, router, isHydrated]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    logout();
-    router.push('/login');
+    toast.loading('Sedang keluar...', { id: 'logout' });
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.warn('Logout network error ignored:', error);
+    } finally {
+      logout();
+      toast.dismiss('logout');
+      router.push('/login');
+    }
   };
 
   const menuItems = [
@@ -35,7 +49,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Karyawan & Kru', href: '/profiles', icon: Users },
   ];
 
-  if (!isAuthenticated || (user?.role !== 'ADMIN' && user?.role !== 'SUPERADMIN')) {
+  if (!isHydrated || !isAuthenticated || (user?.role !== 'ADMIN' && user?.role !== 'SUPERADMIN')) {
     return null; // Prevent flash of content
   }
 

@@ -104,7 +104,7 @@ export default function ProjectsPage() {
     try {
       const url = editingId ? `/api/projects/${editingId}` : '/api/projects';
       const method = editingId ? 'PUT' : 'POST';
-      
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
