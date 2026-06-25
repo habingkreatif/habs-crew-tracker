@@ -1,0 +1,108 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ----------------------------------------------------
+// 1. MASTER DATA: KARYAWAN / WORKER
+// ----------------------------------------------------
+model Profile {
+  id           String   @id // ID ini nanti diisi pakai ID dari Supabase Auth
+  nik          String?  @unique @db.VarChar(16) // NIK KTP (16 digit), unik!
+  nama         String
+  noHp         String?  @unique
+  alamat       String?  @db.Text
+  spesialisasi String?  // Contoh: Tukang Kayu, Kenek, Tukang Besi, Mandor
+  upahHarian   Int      @default(0) // Untuk ngitung cost/boncos harian
+  role         Role     @default(TUKANG)
+  status       Status   @default(ACTIVE)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relasi: Satu karyawan bisa punya banyak absen
+  attendances  Attendance[]
+  dailyTasks   DailyTask[]
+
+  @@map("profiles")
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  MANDOR
+  TUKANG
+}
+
+enum Status {
+  ACTIVE
+  BLACKLISTED
+}
+
+// ----------------------------------------------------
+// 2. MASTER DATA: PROYEK
+// ----------------------------------------------------
+model Project {
+  id                 Int      @id @default(autoincrement())
+  namaProyek         String
+  alamat             String?
+  latitude           Float
+  longitude          Float
+  radiusMeter        Int      @default(50)
+  estimasiDurasiHari Int
+  status             String   @default("on-track") // on-track, delayed, completed
+  createdAt          DateTime @default(now())
+
+  // Relasi
+  attendances Attendance[]
+  dailyTasks  DailyTask[]
+
+  @@map("projects")
+}
+
+// ----------------------------------------------------
+// 3. TRANSAKSIONAL: ABSENSI GPS & SELFIE
+// ----------------------------------------------------
+model Attendance {
+  id             Int       @id @default(autoincrement())
+  userId         String
+  projectId      Int
+  clockIn        DateTime  @default(now())
+  clockOut       DateTime?
+  photoSelfieUrl String
+  latitudeAbsen  Float
+  longitudeAbsen Float
+  isVerified     Boolean   @default(false)
+
+  // Relasi ke tabel Profile dan Project
+  user    Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("attendances")
+}
+
+// ----------------------------------------------------
+// 4. TRANSAKSIONAL: TARGET & PROGRES HARIAN
+// ----------------------------------------------------
+model DailyTask {
+  id                 Int      @id @default(autoincrement())
+  projectId          Int
+  userId             String
+  namaPekerjaan      String
+  tanggal            DateTime @default(now()) @db.Date
+  isLockedPagi       Boolean  @default(false)
+  progressPercentage Int      @default(0) // 0, 25, 50, 75, 100
+  photoProgresUrl    String?
+  catatanTambahan    String?
+  updatedAt          DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("daily_tasks")
+}
