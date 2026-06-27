@@ -20,6 +20,7 @@ model Profile {
   updatedAt    DateTime     @updatedAt
   attendances  Attendance[]
   dailyTasks   DailyTask[]
+  payrolls     Payroll[]
 
   @@map("profiles")
 }
@@ -85,4 +86,29 @@ enum Role {
 enum Status {
   ACTIVE
   BLACKLISTED
+}
+
+enum PayrollStatus {
+  DRAFT
+  PAID
+}
+
+model Payroll {
+  id             Int           @id @default(autoincrement())
+  userId         String
+  periodeMulai   DateTime      @db.Date
+  periodeSelesai DateTime      @db.Date
+  totalHadir     Float
+  upahHarian     Int
+  totalGajiPokok Int
+  bonusLembur    Int           @default(0)
+  potongan       Int           @default(0)
+  totalBersih    Int
+  status         PayrollStatus @default(DRAFT)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user           Profile       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payrolls")
 }
