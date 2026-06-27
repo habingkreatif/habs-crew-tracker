@@ -55,11 +55,10 @@ export default function MandorLayout({ children }: { children: React.ReactNode }
                   <li key={item.name} className="relative z-10">
                     <Link
                       href={item.href}
-                      className={`flex flex-col items-center p-2 transition-all duration-500 ease-out ${
-                        isActive
+                      className={`flex flex-col items-center p-2 transition-all duration-500 ease-out ${isActive
                           ? 'text-primary scale-110'
                           : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                      }`}
+                        }`}
                     >
                       {isActive && (
                         <div className="absolute inset-0 bg-primary/10 rounded-2xl -z-10 animate-in zoom-in-50 duration-300" />
