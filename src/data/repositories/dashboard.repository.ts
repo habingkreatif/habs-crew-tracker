@@ -8,6 +8,11 @@ export class PrismaDashboardRepository implements IDashboardRepository {
       totalActiveProjects: raw.totalActiveProjects,
       totalActiveCrew: raw.totalActiveCrew,
       totalAttendancesToday: raw.totalAttendancesToday,
+      payrollForecastThisWeek: raw.payrollForecastThisWeek,
+      activeProjectsList: raw.activeProjectsList,
+      leaderboard: raw.leaderboard,
+      alerts: raw.alerts,
+      mapAttendances: raw.mapAttendances,
     };
   }
 
