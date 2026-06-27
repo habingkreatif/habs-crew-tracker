@@ -26,13 +26,22 @@ export class PrismaDailyTaskRepository implements IDailyTaskRepository {
 
   async findByUserProjectAndDate(userId: string, projectId: number, date: Date): Promise<DailyTaskEntity[]> {
     const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
+    startOfDay.setUTCHours(0, 0, 0, 0);
     
     const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+    endOfDay.setUTCHours(23, 59, 59, 999);
 
     const models = await dailyTaskDatasource.findDailyTaskByUserProjectAndDate(userId, projectId, startOfDay, endOfDay);
-    return models.map(toDomainEntity);
+    
+    // Filter manual di memory untuk menghindari bug zona waktu Prisma @db.Date
+    const targetDateStr = new Date(date).toISOString().split('T')[0];
+    const filteredModels = models.filter((m) => {
+      // m.tanggal dari Prisma biasanya berformat string atau Date yang memiliki porsi 'YYYY-MM-DD'
+      const modelDateStr = new Date(m.tanggal).toISOString().split('T')[0];
+      return modelDateStr === targetDateStr;
+    });
+
+    return filteredModels.map(toDomainEntity);
   }
 
   async create(data: { userId: string, projectId: number, namaPekerjaan: string, tanggal: Date }): Promise<DailyTaskEntity> {

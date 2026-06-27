@@ -5,6 +5,8 @@ import { createDailyTaskUseCase } from '@/domain/usecase/daily-task/create.useca
 import { getDailyTasksUseCase } from '@/domain/usecase/daily-task/get-daily-tasks.usecase';
 import { PrismaDailyTaskRepository } from '@/data/repositories/daily-task.repository';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;

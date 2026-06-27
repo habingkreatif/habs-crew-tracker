@@ -9,12 +9,9 @@ export const findDailyTaskByUserProjectAndDate = (userId: string, projectId: num
     where: {
       userId,
       projectId,
-      tanggal: {
-        gte: startOfDay,
-        lt: endOfDay,
-      },
     },
-    orderBy: { id: 'asc' },
+    orderBy: { id: 'desc' },
+    take: 50
   });
 
 export const insertDailyTask = (data: Prisma.DailyTaskUncheckedCreateInput) =>
