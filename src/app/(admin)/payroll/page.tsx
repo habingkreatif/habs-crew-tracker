@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
 import { toast } from 'sonner';
-import { Loader2, Calculator, CheckCircle2, FileText, Save } from 'lucide-react';
+import { Loader2, Calculator, CheckCircle2, FileText, Save, Eye, Trash2 } from 'lucide-react';
 
 export default function PayrollPage() {
   const [payrolls, setPayrolls] = useState<any[]>([]);
@@ -203,8 +205,6 @@ export default function PayrollPage() {
   );
 }
 
-import { Trash2 } from 'lucide-react';
-
 function PayrollRow({ payroll, onUpdate, onDelete, formatRupiah }: { payroll: any, onUpdate: any, onDelete: any, formatRupiah: any }) {
   const [bonus, setBonus] = useState(payroll.bonusLembur);
   const [potongan, setPotongan] = useState(payroll.potongan);
@@ -221,6 +221,25 @@ function PayrollRow({ payroll, onUpdate, onDelete, formatRupiah }: { payroll: an
     onUpdate(payroll.id, Number(bonus), Number(potongan), 'PAID');
   };
 
+  const [attendances, setAttendances] = useState<Date[]>([]);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isLoadingCal, setIsLoadingCal] = useState(false);
+
+  const fetchAttendance = async () => {
+    setIsLoadingCal(true);
+    try {
+      const res = await fetch(`/api/admin/payroll/${payroll.id}/attendance`);
+      const data = await res.json();
+      if (data.success) {
+        setAttendances(data.data.map((a: any) => new Date(a.date)));
+      }
+    } catch (err) {
+      toast.error('Gagal mengambil data kehadiran');
+    } finally {
+      setIsLoadingCal(false);
+    }
+  };
+
   return (
     <tr className="border-b dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
       <td className="px-4 py-3 font-medium">
@@ -231,7 +250,44 @@ function PayrollRow({ payroll, onUpdate, onDelete, formatRupiah }: { payroll: an
         {new Date(payroll.periodeMulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} - 
         {new Date(payroll.periodeSelesai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
       </td>
-      <td className="px-4 py-3 font-semibold">{payroll.totalHadir} Hari</td>
+      <td className="px-4 py-3 font-semibold">
+        <div className="flex items-center gap-2">
+          {payroll.totalHadir} Hari
+          <Dialog open={isCalendarOpen} onOpenChange={(open) => {
+            setIsCalendarOpen(open);
+            if (open) fetchAttendance();
+          }}>
+            <DialogTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full text-slate-400 hover:text-primary">
+                <Eye className="w-4 h-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md flex flex-col items-center">
+              <DialogHeader>
+                <DialogTitle>Detail Kehadiran</DialogTitle>
+              </DialogHeader>
+              <div className="mt-4">
+                {isLoadingCal ? (
+                  <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                ) : (
+                  <Calendar
+                    mode="multiple"
+                    selected={attendances}
+                    className="rounded-md border shadow"
+                    modifiers={{
+                      attended: attendances
+                    }}
+                    modifiersStyles={{
+                      attended: { backgroundColor: '#10b981', color: 'white', fontWeight: 'bold' }
+                    }}
+                  />
+                )}
+              </div>
+              <p className="text-xs text-slate-500 mt-2 text-center w-full">Tanggal yang dilingkari hijau adalah hari di mana kru absen masuk.</p>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </td>
       <td className="px-4 py-3">{formatRupiah(payroll.totalGajiPokok)}</td>
       
       <td className="px-4 py-3">
@@ -259,21 +315,23 @@ function PayrollRow({ payroll, onUpdate, onDelete, formatRupiah }: { payroll: an
       </td>
       
       <td className="px-4 py-3">
-        {payroll.status === 'DRAFT' && (
-          <div className="flex gap-2">
-            {isEditing ? (
-              <Button size="sm" onClick={handleSave} className="h-8 px-2"><Save className="w-4 h-4" /></Button>
-            ) : (
-              <Button size="sm" variant="outline" onClick={() => setIsEditing(true)} className="h-8 px-2">Edit</Button>
-            )}
-            {!isEditing && (
-              <Button size="sm" onClick={handlePay} className="h-8 px-2 bg-emerald-600 hover:bg-emerald-700">Lunas</Button>
-            )}
-            <Button size="sm" variant="outline" onClick={() => onDelete(payroll.id)} className="h-8 px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50">
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          {payroll.status === 'DRAFT' && (
+            <>
+              {isEditing ? (
+                <Button size="sm" onClick={handleSave} className="h-8 px-2"><Save className="w-4 h-4" /></Button>
+              ) : (
+                <Button size="sm" variant="outline" onClick={() => setIsEditing(true)} className="h-8 px-2">Edit</Button>
+              )}
+              {!isEditing && (
+                <Button size="sm" onClick={handlePay} className="h-8 px-2 bg-emerald-600 hover:bg-emerald-700">Lunas</Button>
+              )}
+            </>
+          )}
+          <Button size="sm" variant="outline" onClick={() => onDelete(payroll.id)} className="h-8 px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50">
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
       </td>
     </tr>
   );
