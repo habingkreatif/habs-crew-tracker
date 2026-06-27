@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Profile {
+  id           String       @id
+  nik          String?      @unique @db.VarChar(16)
+  nama         String
+  noHp         String?      @unique
+  alamat       String?
+  spesialisasi String?
+  upahPerJam   Int          @default(0)
+  role         String       @default("TUKANG")
+  status       Status       @default(ACTIVE)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  attendances  Attendance[]
+  dailyTasks   DailyTask[]
+  payrolls     Payroll[]
+
+  @@map("profiles")
+}
+
+model Project {
+  id                 Int          @id @default(autoincrement())
+  namaProyek         String
+  alamat             String?
+  latitude           Float
+  longitude          Float
+  radiusMeter        Int          @default(50)
+  estimasiDurasiHari Int
+  status             String       @default("on-track")
+  createdAt          DateTime     @default(now())
+  jamKerjaMulai      String       @default("08:00")
+  jamKerjaSelesai    String       @default("17:00")
+  attendances        Attendance[]
+  dailyTasks         DailyTask[]
+
+  @@map("projects")
+}
+
+model Attendance {
+  id             Int       @id @default(autoincrement())
+  userId         String
+  projectId      Int
+  clockIn        DateTime  @default(now())
+  clockOut       DateTime?
+  photoSelfieUrl String
+  latitudeAbsen  Float
+  longitudeAbsen Float
+  isVerified     Boolean   @default(false)
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user           Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("attendances")
+}
+
+model DailyTask {
+  id                 Int      @id @default(autoincrement())
+  projectId          Int
+  userId             String
+  namaPekerjaan      String
+  tanggal            DateTime @default(now()) @db.Date
+  isLockedPagi       Boolean  @default(false)
+  progressPercentage Int      @default(0)
+  photoProgresUrl    String?
+  catatanTambahan    String?
+  updatedAt          DateTime @updatedAt
+  project            Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user               Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("daily_tasks")
+}
+
+model MasterRole {
+  id        Int      @id @default(autoincrement())
+  nama      String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("master_roles")
+}
+
+enum Status {
+  ACTIVE
+  BLACKLISTED
+}
+
+enum PayrollStatus {
+  DRAFT
+  PAID
+}
+
+model Payroll {
+  id             Int           @id @default(autoincrement())
+  userId         String
+  periodeMulai   DateTime      @db.Date
+  periodeSelesai DateTime      @db.Date
+  totalJamKerja  Float
+  upahPerJam     Int
+  totalGajiPokok Int
+  bonusLembur    Int           @default(0)
+  potongan       Int           @default(0)
+  totalBersih    Int
+  status         PayrollStatus @default(DRAFT)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user           Profile       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payrolls")
+}
