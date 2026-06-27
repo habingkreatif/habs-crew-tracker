@@ -26,6 +26,7 @@ interface Profile {
 
 export default function ProfilesPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [masterRoles, setMasterRoles] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,15 +49,21 @@ export default function ProfilesPage() {
 
   const fetchProfiles = async () => {
     try {
-      const res = await fetch('/api/profiles');
-      const data = await res.json();
-      if (data.success) {
-        setProfiles(data.data);
-      } else {
-        throw new Error(data.error?.message);
+      const [profRes, roleRes] = await Promise.all([
+        fetch('/api/profiles'),
+        fetch('/api/roles')
+      ]);
+      const profData = await profRes.json();
+      const roleData = await roleRes.json();
+
+      if (profData.success) {
+        setProfiles(profData.data);
+      }
+      if (roleData.success) {
+        setMasterRoles(roleData.data);
       }
     } catch (err: any) {
-      toast.error('Gagal mengambil data karyawan', { description: err.message });
+      toast.error('Gagal mengambil data', { description: err.message });
     } finally {
       setIsLoading(false);
     }
@@ -205,9 +212,9 @@ export default function ProfilesPage() {
                   <Select value={createData.role} onValueChange={v => setCreateData({ ...createData, role: v || 'MANDOR' })}>
                     <SelectTrigger><SelectValue placeholder="Pilih Role" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MANDOR">Mandor Proyek</SelectItem>
-                      <SelectItem value="TUKANG">Tukang</SelectItem>
-                      <SelectItem value="ADMIN">Admin / Staff</SelectItem>
+                      {masterRoles.map(r => (
+                        <SelectItem key={r.id} value={r.nama}>{r.nama}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -267,9 +274,9 @@ export default function ProfilesPage() {
                     <Select value={editData.role} onValueChange={v => setEditData({ ...editData, role: v || 'MANDOR' })}>
                       <SelectTrigger><SelectValue placeholder="Pilih Role" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="MANDOR">Mandor Proyek</SelectItem>
-                        <SelectItem value="TUKANG">Tukang</SelectItem>
-                        <SelectItem value="ADMIN">Admin / Staff</SelectItem>
+                        {masterRoles.map(r => (
+                          <SelectItem key={r.id} value={r.nama}>{r.nama}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Role, Status } from '@prisma/client';
+import { Status } from '@prisma/client';
 
 export const CreateProfileSchema = z.object({
   id: z.string().uuid().optional(), // Nanti diisi dari Supabase Auth
@@ -11,7 +11,7 @@ export const CreateProfileSchema = z.object({
   alamat: z.string().optional(),
   spesialisasi: z.string().optional().nullable(),
   upahPerJam: z.number().min(0, 'Upah per jam tidak boleh negatif'),
-  role: z.enum(['SUPERADMIN', 'ADMIN', 'MANDOR', 'TUKANG']),
+  role: z.string().min(1, 'Pilih jabatan/role'),
   status: z.nativeEnum(Status).default(Status.ACTIVE),
 });
 

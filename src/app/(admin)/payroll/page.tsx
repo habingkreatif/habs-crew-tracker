@@ -57,7 +57,7 @@ export default function PayrollPage() {
       }
 
       const userIds = usersData.data
-        .filter((u: any) => u.status === 'ACTIVE' && (u.role === 'MANDOR' || u.role === 'TUKANG'))
+        .filter((u: any) => u.status === 'ACTIVE' && u.role !== 'SUPERADMIN')
         .map((u: any) => u.id);
 
       // Generate payroll

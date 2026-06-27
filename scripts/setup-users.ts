@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { PrismaClient, Role, Status } from '@prisma/client';
+import { PrismaClient, Status } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import 'dotenv/config';
@@ -23,9 +23,9 @@ async function setupUsers() {
   console.log('🔄 Setup Supabase Auth dan Prisma Profiles...');
 
   const usersToCreate = [
-    { email: 'admin@habs.co.id', password: 'password123', role: Role.SUPERADMIN, nama: 'Admin Pusat', spesialisasi: 'Owner' },
-    { email: 'mandor@habs.co.id', password: 'password123', role: Role.MANDOR, nama: 'Pak Budi (Mandor)', spesialisasi: 'Mandor Lapangan' },
-    { email: 'tukang@habs.co.id', password: 'password123', role: Role.TUKANG, nama: 'Mas Agus (Tukang)', spesialisasi: 'Tukang Batu' },
+    { email: 'admin@habs.co.id', password: 'password123', role: 'SUPERADMIN', nama: 'Admin Pusat', spesialisasi: 'Owner' },
+    { email: 'mandor@habs.co.id', password: 'password123', role: 'MANDOR', nama: 'Pak Budi (Mandor)', spesialisasi: 'Mandor Lapangan' },
+    { email: 'tukang@habs.co.id', password: 'password123', role: 'TUKANG', nama: 'Mas Agus (Tukang)', spesialisasi: 'Tukang Batu' },
   ];
 
   for (const u of usersToCreate) {

@@ -14,7 +14,7 @@ model Profile {
   alamat       String?
   spesialisasi String?
   upahPerJam   Int          @default(0)
-  role         Role         @default(TUKANG)
+  role         String       @default("TUKANG")
   status       Status       @default(ACTIVE)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -76,11 +76,12 @@ model DailyTask {
   @@map("daily_tasks")
 }
 
-enum Role {
-  SUPERADMIN
-  ADMIN
-  MANDOR
-  TUKANG
+model MasterRole {
+  id        Int      @id @default(autoincrement())
+  nama      String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("master_roles")
 }
 
 enum Status {

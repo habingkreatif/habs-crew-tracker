@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, Users, Building2, LogOut, Menu, FileText, Banknote } from 'lucide-react';
+import { LayoutDashboard, Users, Building2, LogOut, Menu, FileText, Banknote, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
@@ -49,6 +49,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Penggajian', href: '/payroll', icon: Banknote },
     { name: 'Manajemen Proyek', href: '/projects', icon: Building2 },
     { name: 'Karyawan & Kru', href: '/profiles', icon: Users },
+    { name: 'Pengaturan Role', href: '/roles', icon: Shield },
   ];
 
   if (!isHydrated || !isAuthenticated || (user?.role !== 'ADMIN' && user?.role !== 'SUPERADMIN')) {

@@ -1,4 +1,4 @@
-import { PrismaClient, Role, Status } from '@prisma/client';
+import { PrismaClient, Status } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import 'dotenv/config';
@@ -16,15 +16,22 @@ async function main() {
     await prisma.attendance.deleteMany();
     await prisma.project.deleteMany();
     await prisma.profile.deleteMany();
+    await prisma.masterRole.deleteMany();
 
-    // 2. Buat Data Karyawan (Superadmin, Mandor, Tukang)
+    // 2. Buat Data Master Role
+    const roles = ['SUPERADMIN', 'ADMIN', 'MANDOR', 'TUKANG', 'PENGAWAS', 'IT', 'STAF', 'CEO', 'CTO', 'COO', 'HRD', 'MANAGER', 'LAINNYA'];
+    for (const r of roles) {
+        await prisma.masterRole.create({ data: { nama: r } });
+    }
+
+    // 3. Buat Data Karyawan (Superadmin, Mandor, Tukang)
     const owner = await prisma.profile.create({
         data: {
             id: 'uuid-dummy-owner-123',
             nik: '3402000000000001',
             nama: 'Muhammad Syifa',
             noHp: '081100001111',
-            role: Role.SUPERADMIN,
+            role: 'SUPERADMIN',
             status: Status.ACTIVE,
             spesialisasi: 'Owner',
         },
@@ -36,7 +43,7 @@ async function main() {
             nik: '3402000000000002',
             nama: 'Pak Budi (Mandor)',
             noHp: '081200002222',
-            role: Role.MANDOR,
+            role: 'MANDOR',
             status: Status.ACTIVE,
             spesialisasi: 'Mandor Proyek',
             upahPerJam: 25000,
@@ -49,7 +56,7 @@ async function main() {
             nik: '3402000000000003',
             nama: 'Mas Agus (Tukang Kayu)',
             noHp: '081300003333',
-            role: Role.TUKANG,
+            role: 'TUKANG',
             status: Status.ACTIVE,
             spesialisasi: 'Tukang Kayu',
             upahPerJam: 15000,

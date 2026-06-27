@@ -1,5 +1,5 @@
 import { IProfileRepository } from '@/domain/repositories/profile.repository';
-import { ProfileEntity, Role, Status } from '@/domain/entities/profile.entity';
+import { ProfileEntity, Status } from '@/domain/entities/profile.entity';
 import { CreateProfileInput, UpdateProfileInput } from '@/lib/schemas/profile.schema';
 import * as profileDatasource from '../datasource/prisma/profile.datasource';
 import * as authDatasource from '../datasource/supabase/auth.datasource';
@@ -9,7 +9,7 @@ function toDomainEntity(model: PrismaProfile): ProfileEntity {
   return new ProfileEntity(
     model.id,
     model.nama,
-    model.role as Role,
+    model.role,
     model.status as Status,
     model.upahPerJam,
     model.createdAt,
