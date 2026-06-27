@@ -14,6 +14,21 @@ export const findDailyTaskByUserProjectAndDate = (userId: string, projectId: num
     take: 50
   });
 
+export const findDailyTasksByProjectAndDateRange = (projectId: number, startOfDay: Date, endOfDay: Date) =>
+  prisma.dailyTask.findMany({
+    where: {
+      projectId,
+      updatedAt: {
+        gte: startOfDay,
+        lt: endOfDay,
+      }
+    },
+    include: {
+      user: { select: { nama: true, role: true } },
+    },
+    orderBy: { updatedAt: 'desc' },
+  });
+
 export const findAllDailyTasksByUserAndProject = (userId: string, projectId: number) =>
   prisma.dailyTask.findMany({
     where: {

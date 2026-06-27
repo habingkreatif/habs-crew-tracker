@@ -19,6 +19,21 @@ export const findAttendanceByUserAndDate = (userId: string, startOfDay: Date, en
     orderBy: { clockIn: 'desc' },
   });
 
+export const findAttendancesByProjectAndDateRange = (projectId: number, startOfDay: Date, endOfDay: Date) =>
+  prisma.attendance.findMany({
+    where: {
+      projectId,
+      clockIn: {
+        gte: startOfDay,
+        lt: endOfDay,
+      },
+    },
+    include: {
+      user: { select: { nama: true, role: true } },
+    },
+    orderBy: { clockIn: 'asc' },
+  });
+
 export const findHistoryByUser = (userId: string, limitDays: number) => {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - limitDays);
