@@ -39,7 +39,7 @@ async function main() {
             role: Role.MANDOR,
             status: Status.ACTIVE,
             spesialisasi: 'Mandor Proyek',
-            upahHarian: 150000,
+            upahPerJam: 25000,
         },
     });
 
@@ -52,7 +52,7 @@ async function main() {
             role: Role.TUKANG,
             status: Status.ACTIVE,
             spesialisasi: 'Tukang Kayu',
-            upahHarian: 120000,
+            upahPerJam: 15000,
         },
     });
 

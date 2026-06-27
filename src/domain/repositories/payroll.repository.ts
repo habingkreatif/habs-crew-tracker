@@ -22,9 +22,9 @@ export interface IPayrollRepository {
   findById(id: number): Promise<PayrollEntity | null>;
   
   /**
-   * Hitung kehadiran valid (absen masuk & keluar) dalam range tanggal tertentu
+   * Hitung total jam kerja (absen masuk & keluar) dalam range tanggal tertentu
    */
-  countValidAttendanceDays(userId: string, start: Date, end: Date): Promise<number>;
+  countTotalWorkHours(userId: string, start: Date, end: Date): Promise<number>;
 
   /**
    * Hapus payroll berdasarkan ID

@@ -13,7 +13,7 @@ model Profile {
   noHp         String?      @unique
   alamat       String?
   spesialisasi String?
-  upahHarian   Int          @default(0)
+  upahPerJam   Int          @default(0)
   role         Role         @default(TUKANG)
   status       Status       @default(ACTIVE)
   createdAt    DateTime     @default(now())
@@ -98,8 +98,8 @@ model Payroll {
   userId         String
   periodeMulai   DateTime      @db.Date
   periodeSelesai DateTime      @db.Date
-  totalHadir     Float
-  upahHarian     Int
+  totalJamKerja  Float
+  upahPerJam     Int
   totalGajiPokok Int
   bonusLembur    Int           @default(0)
   potongan       Int           @default(0)

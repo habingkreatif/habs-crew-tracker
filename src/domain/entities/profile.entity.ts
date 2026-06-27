@@ -16,7 +16,7 @@ export class ProfileEntity {
     public readonly nama: string,
     public readonly role: Role,
     public readonly status: Status,
-    public readonly upahHarian: number,
+    public readonly upahPerJam: number,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
     public readonly nik?: string | null,

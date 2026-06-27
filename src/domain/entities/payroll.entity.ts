@@ -7,8 +7,8 @@ export interface PayrollEntity {
   userRole?: string;
   periodeMulai: Date;
   periodeSelesai: Date;
-  totalHadir: number;
-  upahHarian: number;
+  totalJamKerja: number;
+  upahPerJam: number;
   totalGajiPokok: number;
   bonusLembur: number;
   potongan: number;

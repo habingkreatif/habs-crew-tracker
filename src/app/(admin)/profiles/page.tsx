@@ -21,7 +21,7 @@ interface Profile {
   status: string;
   spesialisasi: string | null;
   alamat: string | null;
-  upahHarian: number;
+  upahPerJam: number;
 }
 
 export default function ProfilesPage() {
@@ -32,7 +32,7 @@ export default function ProfilesPage() {
   // Create State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createData, setCreateData] = useState({
-    nama: '', email: '', password: '', role: 'MANDOR', noHp: '', spesialisasi: '', nik: '', alamat: '', upahHarian: 0
+    nama: '', email: '', password: '', role: 'MANDOR', noHp: '', spesialisasi: '', nik: '', alamat: '', upahPerJam: 0
   });
 
   // Edit State
@@ -73,7 +73,7 @@ export default function ProfilesPage() {
         noHp: createData.noHp || undefined,
         spesialisasi: createData.spesialisasi || undefined,
         alamat: createData.alamat || undefined,
-        upahHarian: createData.upahHarian || 0,
+        upahPerJam: createData.upahPerJam || 0,
       };
 
       const res = await fetch('/api/profiles', {
@@ -87,7 +87,7 @@ export default function ProfilesPage() {
 
       toast.success('Berhasil', { description: `Akun untuk ${createData.nama} telah dibuat.` });
       setIsCreateOpen(false);
-      setCreateData({ nama: '', email: '', password: '', role: 'MANDOR', noHp: '', spesialisasi: '', nik: '', alamat: '', upahHarian: 0 });
+      setCreateData({ nama: '', email: '', password: '', role: 'MANDOR', noHp: '', spesialisasi: '', nik: '', alamat: '', upahPerJam: 0 });
       fetchProfiles();
     } catch (err: any) {
       toast.error('Gagal Mendaftar', { description: err.message });
@@ -110,7 +110,7 @@ export default function ProfilesPage() {
         noHp: editData.noHp || undefined,
         spesialisasi: editData.spesialisasi || undefined,
         alamat: editData.alamat || undefined,
-        upahHarian: editData.upahHarian || 0,
+        upahPerJam: editData.upahPerJam || 0,
       };
 
       const res = await fetch(`/api/profiles/${editData.id}`, {
@@ -222,8 +222,8 @@ export default function ProfilesPage() {
                   <Input id="c-spesialisasi" value={createData.spesialisasi} onChange={e => setCreateData({ ...createData, spesialisasi: e.target.value })} placeholder="Tukang Kayu" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="c-upah">Upah Harian (Rp)</Label>
-                  <Input id="c-upah" type="number" min="0" value={createData.upahHarian} onChange={e => setCreateData({ ...createData, upahHarian: parseInt(e.target.value) || 0 })} placeholder="150000" />
+                  <Label htmlFor="c-upah">Upah Per Jam (Rp)</Label>
+                  <Input id="c-upah" type="number" min="0" value={createData.upahPerJam} onChange={e => setCreateData({ ...createData, upahPerJam: parseInt(e.target.value) || 0 })} placeholder="20000" />
                 </div>
               </div>
               <div className="space-y-2">
@@ -300,8 +300,8 @@ export default function ProfilesPage() {
                     <Input id="e-alamat" value={editData.alamat || ''} onChange={e => setEditData({ ...editData, alamat: e.target.value })} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="e-upah">Upah Harian (Rp)</Label>
-                    <Input id="e-upah" type="number" min="0" value={editData.upahHarian || 0} onChange={e => setEditData({ ...editData, upahHarian: parseInt(e.target.value) || 0 })} />
+                    <Label htmlFor="e-upah">Upah Per Jam (Rp)</Label>
+                    <Input id="e-upah" type="number" min="0" value={editData.upahPerJam || 0} onChange={e => setEditData({ ...editData, upahPerJam: parseInt(e.target.value) || 0 })} />
                   </div>
                 </div>
                 <div className="pt-4 flex justify-end gap-2">

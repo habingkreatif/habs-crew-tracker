@@ -9,8 +9,8 @@ const toDomainEntity = (raw: any): PayrollEntity => ({
   userRole: raw.user?.role,
   periodeMulai: raw.periodeMulai,
   periodeSelesai: raw.periodeSelesai,
-  totalHadir: raw.totalHadir,
-  upahHarian: raw.upahHarian,
+  totalJamKerja: raw.totalJamKerja,
+  upahPerJam: raw.upahPerJam,
   totalGajiPokok: raw.totalGajiPokok,
   bonusLembur: raw.bonusLembur,
   potongan: raw.potongan,
@@ -36,8 +36,8 @@ export class PrismaPayrollRepository implements IPayrollRepository {
       userId: entity.userId,
       periodeMulai: entity.periodeMulai,
       periodeSelesai: entity.periodeSelesai,
-      totalHadir: entity.totalHadir,
-      upahHarian: entity.upahHarian,
+      totalJamKerja: entity.totalJamKerja,
+      upahPerJam: entity.upahPerJam,
       totalGajiPokok: entity.totalGajiPokok,
       bonusLembur: entity.bonusLembur,
       potongan: entity.potongan,
@@ -58,21 +58,22 @@ export class PrismaPayrollRepository implements IPayrollRepository {
     return toDomainEntity(raw);
   }
 
-  async countValidAttendanceDays(userId: string, start: Date, end: Date): Promise<number> {
+  async countTotalWorkHours(userId: string, start: Date, end: Date): Promise<number> {
     const attendances = await ds.getAttendancesForPayroll(userId, start, end);
-    let total = 0;
+    let totalJam = 0;
     
-    // Half day rule: if clockIn exists but no clockOut, we count it as 0.5.
-    // Full day rule: if clockIn and clockOut both exist, we count it as 1.
     for (const record of attendances) {
       if (record.clockIn && record.clockOut) {
-        total += 1;
+        const diffMs = record.clockOut.getTime() - record.clockIn.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+        totalJam += diffHours;
       } else if (record.clockIn && !record.clockOut) {
-        total += 0.5;
+        // Default 4 jam jika lupa absen keluar
+        totalJam += 4;
       }
     }
     
-    return total;
+    return totalJam;
   }
 
   async delete(id: number): Promise<void> {

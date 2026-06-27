@@ -9,9 +9,9 @@ export const CreateProfileSchema = z.object({
   nama: z.string().min(3),
   noHp: z.string().min(10).optional(),
   alamat: z.string().optional(),
-  spesialisasi: z.string().optional(),
-  upahHarian: z.coerce.number().min(0).default(0),
-  role: z.nativeEnum(Role).default(Role.TUKANG),
+  spesialisasi: z.string().optional().nullable(),
+  upahPerJam: z.number().min(0, 'Upah per jam tidak boleh negatif'),
+  role: z.enum(['SUPERADMIN', 'ADMIN', 'MANDOR', 'TUKANG']),
   status: z.nativeEnum(Status).default(Status.ACTIVE),
 });
 

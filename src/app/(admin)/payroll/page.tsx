@@ -153,7 +153,7 @@ export default function PayrollPage() {
                       <tr>
                         <th className="px-4 py-3 rounded-tl-xl">Kru</th>
                         <th className="px-4 py-3">Periode</th>
-                        <th className="px-4 py-3">Hadir</th>
+                        <th className="px-4 py-3">Total Jam</th>
                         <th className="px-4 py-3">Gaji Pokok</th>
                         <th className="px-4 py-3 w-32">Bonus Lembur</th>
                         <th className="px-4 py-3 w-32">Potongan</th>
@@ -252,7 +252,7 @@ function PayrollRow({ payroll, onUpdate, onDelete, formatRupiah }: { payroll: an
       </td>
       <td className="px-4 py-3 font-semibold">
         <div className="flex items-center gap-2">
-          {payroll.totalHadir} Hari
+          {Number(payroll.totalJamKerja).toFixed(1)} Jam
           <Dialog open={isCalendarOpen} onOpenChange={(open) => {
             setIsCalendarOpen(open);
             if (open) fetchAttendance();

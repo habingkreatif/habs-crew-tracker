@@ -42,10 +42,10 @@ export async function POST(req: Request) {
     const results = [];
     const errors = [];
 
-    // Fetch upah harian for these users from Profile table
+    // Fetch upah per jam for these users from Profile table
     const profiles = await prisma.profile.findMany({
       where: { id: { in: userIds } },
-      select: { id: true, upahHarian: true, nama: true }
+      select: { id: true, upahPerJam: true, nama: true }
     });
 
     for (const profile of profiles) {
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
             periodeSelesai: end,
           },
           repo,
-          profile.upahHarian || 0
+          profile.upahPerJam || 0
         );
         results.push(payroll);
       } catch (err: any) {

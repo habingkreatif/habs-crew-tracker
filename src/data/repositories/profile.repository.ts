@@ -11,7 +11,7 @@ function toDomainEntity(model: PrismaProfile): ProfileEntity {
     model.nama,
     model.role as Role,
     model.status as Status,
-    model.upahHarian,
+    model.upahPerJam,
     model.createdAt,
     model.updatedAt,
     model.nik,
@@ -49,7 +49,7 @@ export class PrismaProfileRepository implements IProfileRepository {
       noHp: data.noHp,
       alamat: data.alamat,
       spesialisasi: data.spesialisasi,
-      upahHarian: data.upahHarian,
+      upahPerJam: data.upahPerJam,
       role: data.role,
       status: data.status,
     });
