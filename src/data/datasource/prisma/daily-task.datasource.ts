@@ -14,6 +14,15 @@ export const findDailyTaskByUserProjectAndDate = (userId: string, projectId: num
     take: 50
   });
 
+export const findAllDailyTasksByUserAndProject = (userId: string, projectId: number) =>
+  prisma.dailyTask.findMany({
+    where: {
+      userId,
+      projectId,
+    },
+    orderBy: { tanggal: 'desc' },
+  });
+
 export const insertDailyTask = (data: Prisma.DailyTaskUncheckedCreateInput) =>
   prisma.dailyTask.create({ data: { ...data, isLockedPagi: true } });
 
