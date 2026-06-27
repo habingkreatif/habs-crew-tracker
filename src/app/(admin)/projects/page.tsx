@@ -19,6 +19,8 @@ interface Project {
   radiusMeter: number;
   estimasiDurasiHari: number;
   status: string;
+  jamKerjaMulai: string;
+  jamKerjaSelesai: string;
 }
 
 export default function ProjectsPage() {
@@ -33,7 +35,9 @@ export default function ProjectsPage() {
     latitude: '',
     longitude: '',
     radiusMeter: '50',
-    estimasiDurasiHari: '30'
+    estimasiDurasiHari: '30',
+    jamKerjaMulai: '08:00',
+    jamKerjaSelesai: '17:00'
   });
 
   useEffect(() => {
@@ -81,7 +85,7 @@ export default function ProjectsPage() {
 
   const handleAddNew = () => {
     setEditingId(null);
-    setFormData({ namaProyek: '', alamat: '', latitude: '', longitude: '', radiusMeter: '50', estimasiDurasiHari: '30' });
+    setFormData({ namaProyek: '', alamat: '', latitude: '', longitude: '', radiusMeter: '50', estimasiDurasiHari: '30', jamKerjaMulai: '08:00', jamKerjaSelesai: '17:00' });
     setIsModalOpen(true);
   };
 
@@ -94,6 +98,8 @@ export default function ProjectsPage() {
       longitude: project.longitude.toString(),
       radiusMeter: project.radiusMeter.toString(),
       estimasiDurasiHari: project.estimasiDurasiHari.toString(),
+      jamKerjaMulai: project.jamKerjaMulai,
+      jamKerjaSelesai: project.jamKerjaSelesai
     });
     setIsModalOpen(true);
   };
@@ -115,6 +121,8 @@ export default function ProjectsPage() {
           longitude: parseFloat(formData.longitude),
           radiusMeter: parseInt(formData.radiusMeter, 10),
           estimasiDurasiHari: parseInt(formData.estimasiDurasiHari, 10),
+          jamKerjaMulai: formData.jamKerjaMulai,
+          jamKerjaSelesai: formData.jamKerjaSelesai,
           status: 'on-track'
         })
       });
@@ -124,7 +132,7 @@ export default function ProjectsPage() {
         setIsModalOpen(false);
         setEditingId(null);
         fetchProjects();
-        setFormData({ namaProyek: '', alamat: '', latitude: '', longitude: '', radiusMeter: '50', estimasiDurasiHari: '30' });
+        setFormData({ namaProyek: '', alamat: '', latitude: '', longitude: '', radiusMeter: '50', estimasiDurasiHari: '30', jamKerjaMulai: '08:00', jamKerjaSelesai: '17:00' });
       } else {
         throw new Error(data.error?.message || (editingId ? 'Gagal mengedit proyek' : 'Gagal menambahkan proyek'));
       }
@@ -194,6 +202,17 @@ export default function ProjectsPage() {
                   <Input id="estimasiDurasiHari" required type="number" min="1" value={formData.estimasiDurasiHari} onChange={e => setFormData({ ...formData, estimasiDurasiHari: e.target.value })} />
                 </div>
               </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="jamKerjaMulai">Jam Masuk (HH:mm)</Label>
+                  <Input id="jamKerjaMulai" required type="time" value={formData.jamKerjaMulai} onChange={e => setFormData({ ...formData, jamKerjaMulai: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="jamKerjaSelesai">Jam Pulang (HH:mm)</Label>
+                  <Input id="jamKerjaSelesai" required type="time" value={formData.jamKerjaSelesai} onChange={e => setFormData({ ...formData, jamKerjaSelesai: e.target.value })} />
+                </div>
+              </div>
 
               <div className="pt-4 flex justify-end gap-3">
                 <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button>
@@ -246,9 +265,9 @@ export default function ProjectsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center text-slate-500 text-sm">
-                        <CalendarDays className="w-4 h-4 mr-2" />
-                        {project.estimasiDurasiHari} Hari
+                      <div className="flex flex-col text-slate-500 text-sm gap-1">
+                        <div className="flex items-center"><CalendarDays className="w-4 h-4 mr-2" />{project.estimasiDurasiHari} Hari</div>
+                        <div className="text-xs font-semibold text-slate-400">Jam Kerja: {project.jamKerjaMulai} - {project.jamKerjaSelesai}</div>
                       </div>
                     </TableCell>
                     <TableCell>

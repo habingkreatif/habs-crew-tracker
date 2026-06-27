@@ -8,6 +8,8 @@ export const CreateProjectSchema = z.object({
   radiusMeter: z.coerce.number().min(10).default(50),
   estimasiDurasiHari: z.coerce.number().min(1),
   status: z.string().default('on-track'),
+  jamKerjaMulai: z.string().default('08:00'),
+  jamKerjaSelesai: z.string().default('17:00'),
 });
 
 export const UpdateProjectSchema = CreateProjectSchema.partial();

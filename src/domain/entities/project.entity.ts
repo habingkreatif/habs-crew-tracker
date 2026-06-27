@@ -8,6 +8,8 @@ export class ProjectEntity {
     public readonly estimasiDurasiHari: number,
     public readonly status: string,
     public readonly createdAt: Date,
+    public readonly jamKerjaMulai: string,
+    public readonly jamKerjaSelesai: string,
     public readonly alamat?: string | null
   ) {}
 }

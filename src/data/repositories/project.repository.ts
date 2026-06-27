@@ -14,6 +14,8 @@ function toDomainEntity(model: PrismaProject): ProjectEntity {
     model.estimasiDurasiHari,
     model.status,
     model.createdAt,
+    model.jamKerjaMulai,
+    model.jamKerjaSelesai,
     model.alamat
   );
 }
@@ -37,6 +39,8 @@ export class PrismaProjectRepository implements IProjectRepository {
       radiusMeter: data.radiusMeter,
       estimasiDurasiHari: data.estimasiDurasiHari,
       status: data.status,
+      jamKerjaMulai: data.jamKerjaMulai,
+      jamKerjaSelesai: data.jamKerjaSelesai,
       alamat: data.alamat,
     });
     return toDomainEntity(model);
