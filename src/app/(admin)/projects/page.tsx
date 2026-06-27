@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, MapPin, CalendarDays, Loader2, Navigation } from 'lucide-react';
+import { Plus, MapPin, CalendarDays, Loader2, Navigation, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Project {
@@ -140,6 +140,25 @@ export default function ProjectsPage() {
       toast.error('Gagal', { description: err.message });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Yakin ingin menghapus proyek ini? (Aksi ini tidak bisa dibatalkan)')) return;
+    
+    const toastId = toast.loading('Menghapus proyek...');
+    try {
+      const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      
+      if (data.success) {
+        toast.success('Proyek berhasil dihapus', { id: toastId });
+        setProjects(prev => prev.filter(p => p.id !== id));
+      } else {
+        throw new Error(data.error?.message || 'Gagal menghapus');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal menghapus proyek', { id: toastId });
     }
   };
 
@@ -279,7 +298,12 @@ export default function ProjectsPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="text-primary hover:text-primary hover:bg-primary/10" onClick={() => handleEdit(project)}>Edit</Button>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" className="text-primary hover:text-primary hover:bg-primary/10 px-3" onClick={() => handleEdit(project)}>Edit</Button>
+                        <Button variant="ghost" size="sm" className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3" onClick={() => handleDelete(project.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
