@@ -9,9 +9,7 @@ export const ClockInSchema = z.object({
 });
 
 export const ClockOutSchema = z.object({
-  attendanceId: z.coerce.number().positive(),
-  latitude: z.coerce.number().min(-90).max(90),
-  longitude: z.coerce.number().min(-180).max(180),
+  userId: z.string().min(1, "userId wajib diisi"),
 });
 
 export type ClockInInput = z.infer<typeof ClockInSchema>;
