@@ -23,7 +23,7 @@ export const getDashboardStatsQuery = async (): Promise<DashboardStatsRaw> => {
     prisma.profile.count({
       where: {
         status: 'ACTIVE',
-        role: { in: ['MANDOR', 'TUKANG'] }
+        role: { notIn: ['SUPERADMIN', 'ADMIN'] }
       }
     }),
     // Count unique user attendances today
