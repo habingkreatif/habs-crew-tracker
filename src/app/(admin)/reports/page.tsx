@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LayoutGrid, List, Loader2, Calendar, MapPin, CheckCircle2, Clock, Image as ImageIcon, SearchX, LogOut } from 'lucide-react';
+import { LayoutGrid, List, Loader2, Calendar, MapPin, CheckCircle2, Clock, Image as ImageIcon, SearchX, LogOut, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CrewReport {
@@ -35,6 +35,7 @@ export default function ReportsPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedUserId, setSelectedUserId] = useState<string>('all');
 
   const [reports, setReports] = useState<CrewReport[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,6 +48,7 @@ export default function ReportsPage() {
   useEffect(() => {
     if (selectedProjectId && selectedDate) {
       fetchReports();
+      setSelectedUserId('all'); // Reset user filter when project/date changes
     } else {
       setReports([]);
     }
@@ -89,6 +91,10 @@ export default function ReportsPage() {
     if (!isoString) return '-';
     return new Date(isoString).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   };
+
+  const filteredReports = selectedUserId === 'all'
+    ? reports
+    : reports.filter(r => r.userId === selectedUserId);
 
   return (
     <div className="space-y-6">
@@ -136,7 +142,7 @@ export default function ReportsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2 md:col-span-1">
               <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Tanggal Laporan</Label>
               <Input
                 type="date"
@@ -144,6 +150,22 @@ export default function ReportsPage() {
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="h-12 rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50"
               />
+            </div>
+            <div className="space-y-2 md:col-span-1">
+              <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Filter Kru</Label>
+              <Select value={selectedUserId} onValueChange={(v) => setSelectedUserId(v || 'all')} disabled={reports.length === 0}>
+                <SelectTrigger className="h-12 rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                  <SelectValue placeholder="Semua Kru">
+                    {selectedUserId === 'all' ? 'Semua Kru' : reports.find(r => r.userId === selectedUserId)?.nama || 'Semua Kru'}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="all" className="font-medium py-3">Semua Kru</SelectItem>
+                  {reports.map(r => (
+                    <SelectItem key={r.userId} value={r.userId} className="font-medium py-3">{r.nama}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
@@ -155,12 +177,12 @@ export default function ReportsPage() {
           <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
           <p className="text-slate-500 font-medium animate-pulse">Menarik data dari lapangan...</p>
         </div>
-      ) : reports.length === 0 ? (
+      ) : filteredReports.length === 0 ? (
         <Card className="border-0 shadow-sm border-dashed border-2 border-slate-200 dark:border-slate-800 bg-transparent">
           <CardContent className="flex flex-col h-64 items-center justify-center text-slate-500">
             <SearchX className="w-12 h-12 mb-4 opacity-50" />
             <p className="font-semibold text-lg">Tidak ada laporan</p>
-            <p className="text-sm">Belum ada kru yang absen atau mengirim laporan di tanggal ini.</p>
+            <p className="text-sm">Belum ada data untuk kriteria filter ini.</p>
           </CardContent>
         </Card>
       ) : viewMode === 'table' ? (
@@ -177,7 +199,7 @@ export default function ReportsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {reports.map((report) => (
+                {filteredReports.map((report) => (
                   <TableRow key={report.userId} className="group hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
                     {/* Kru Info */}
                     <TableCell>
@@ -271,65 +293,99 @@ export default function ReportsPage() {
       ) : (
         /* GALLERY VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {reports.map((report) => (
-            <Card key={report.userId} className="border-0 shadow-md hover:shadow-xl transition-all overflow-hidden flex flex-col">
-              {/* Photo Header (Uses the latest task photo, or placeholder) */}
-              <div className="relative aspect-video bg-slate-100 dark:bg-slate-800 overflow-hidden group">
-                {report.tasks.length > 0 && report.tasks[0].photoProgresUrl ? (
-                  <img src={report.tasks[0].photoProgresUrl} alt="Progres" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
-                    <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
-                    <span className="text-xs font-medium">Tidak ada foto lapangan</span>
-                  </div>
-                )}
+          {(() => {
+            type GalleryItem = {
+              id: string;
+              userId: string;
+              nama: string;
+              role: string;
+              attendance: CrewReport['attendance'];
+              task: CrewReport['tasks'][number] | null;
+            };
 
-                {/* Floating Progress Badge */}
-                {report.tasks.length > 0 && (
-                  <div className="absolute top-3 right-3 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/20">
-                    <span className="text-white font-black text-sm">{report.tasks[0].progressPercentage}%</span>
-                  </div>
-                )}
-              </div>
+            const galleryItems = filteredReports.reduce<GalleryItem[]>((acc, report) => {
+              if (report.tasks.length === 0) {
+                acc.push({
+                  id: `empty-${report.userId}`,
+                  userId: report.userId,
+                  nama: report.nama,
+                  role: report.role,
+                  attendance: report.attendance,
+                  task: null
+                });
+              } else {
+                report.tasks.forEach(task => {
+                  acc.push({
+                    id: `task-${task.id}`,
+                    userId: report.userId,
+                    nama: report.nama,
+                    role: report.role,
+                    attendance: report.attendance,
+                    task: task
+                  });
+                });
+              }
+              return acc;
+            }, []);
 
-              <CardContent className="p-5 flex-1 flex flex-col">
-                <div className="flex gap-4 items-start mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-slate-200 shrink-0 overflow-hidden border-2 border-white dark:border-slate-800 shadow-sm -mt-10 relative z-10">
-                    {report.attendance?.photoSelfieUrl ? (
-                      <img src={report.attendance.photoSelfieUrl} alt="Selfie" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-100"><ImageIcon className="w-5 h-5" /></div>
-                    )}
-                  </div>
-                  <div className="pt-1">
-                    <p className="font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{report.nama}</p>
-                    <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">{report.role}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 mb-4 flex-1">
-                  {report.tasks.length > 0 ? (
-                    <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Target Pekerjaan</p>
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 line-clamp-2">{report.tasks[0].namaPekerjaan}</p>
-                      {report.tasks[0].catatanTambahan && (
-                        <p className="text-xs text-slate-500 mt-1 italic">"{report.tasks[0].catatanTambahan}"</p>
-                      )}
-                    </div>
+            return galleryItems.map((item) => (
+              <Card key={item.id} className="border-0 shadow-md hover:shadow-xl transition-all overflow-hidden flex flex-col">
+                <div className="relative aspect-video bg-slate-100 dark:bg-slate-800 overflow-hidden group">
+                  {item.task?.photoProgresUrl ? (
+                    <img src={item.task.photoProgresUrl} alt="Progres" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   ) : (
-                    <div className="p-3 bg-rose-50 dark:bg-rose-950/30 rounded-lg border border-rose-100 dark:border-rose-900/50">
-                      <p className="text-xs text-rose-600 font-medium">Belum ada laporan pekerjaan yang disubmit hari ini.</p>
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                      <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
+                      <span className="text-xs font-medium">Tidak ada foto lapangan</span>
+                    </div>
+                  )}
+
+                  {item.task && (
+                    <div className="absolute top-3 right-3 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/20">
+                      <span className="text-white font-black text-sm">{item.task.progressPercentage}%</span>
                     </div>
                   )}
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs font-semibold text-slate-500">
-                  <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-emerald-500" /> {formatTime(report.attendance?.clockIn)}</div>
-                  <div className="flex items-center gap-1.5">{formatTime(report.attendance?.clockOut)} <LogOut className="w-3.5 h-3.5 text-blue-500" /></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                <CardContent className="p-5 flex-1 flex flex-col">
+                  <div className="flex gap-4 items-start mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-slate-200 shrink-0 overflow-hidden border-2 border-white dark:border-slate-800 shadow-sm -mt-10 relative z-10">
+                      {item.attendance?.photoSelfieUrl ? (
+                        <img src={item.attendance.photoSelfieUrl} alt="Selfie" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-100"><ImageIcon className="w-5 h-5" /></div>
+                      )}
+                    </div>
+                    <div className="pt-1">
+                      <p className="font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{item.nama}</p>
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">{item.role}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 mb-4 flex-1">
+                    {item.task ? (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Target Pekerjaan</p>
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 line-clamp-2">{item.task.namaPekerjaan}</p>
+                        {item.task.catatanTambahan && (
+                          <p className="text-xs text-slate-500 mt-1 italic">"{item.task.catatanTambahan}"</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-950/30 rounded-lg border border-rose-100 dark:border-rose-900/50">
+                        <p className="text-xs text-rose-600 font-medium">Belum ada laporan pekerjaan yang disubmit hari ini.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs font-semibold text-slate-500">
+                    <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-emerald-500" /> {formatTime(item.attendance?.clockIn)}</div>
+                    <div className="flex items-center gap-1.5">{formatTime(item.attendance?.clockOut)} <LogOut className="w-3.5 h-3.5 text-blue-500" /></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ));
+          })()}
         </div>
       )}
     </div>

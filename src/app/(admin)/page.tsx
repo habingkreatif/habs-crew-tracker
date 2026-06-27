@@ -1,14 +1,38 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building2, TrendingUp, AlertCircle } from 'lucide-react';
+import { Users, Building2, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
+import { DashboardStats, DashboardActivity } from '@/domain/repositories/dashboard.repository';
 
 export default function AdminDashboard() {
-  // Auth check and redirect is handled entirely by (admin)/layout.tsx
-  const stats = [
-    { title: 'Total Proyek Aktif', value: '3', icon: Building2, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/30' },
-    { title: 'Mandor Bertugas', value: '5', icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
-    { title: 'Tukang Hadir Hari Ini', value: '24', icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/20' },
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [activities, setActivities] = useState<DashboardActivity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const res = await fetch('/api/admin/dashboard');
+        const data = await res.json();
+        if (data.success) {
+          setStats(data.data.stats);
+          setActivities(data.data.recentActivities);
+        }
+      } catch (err) {
+        console.error('Gagal memuat dashboard', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+
+  const statCards = [
+    { title: 'Total Proyek Aktif', value: stats?.totalActiveProjects ?? '-', icon: Building2, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/30' },
+    { title: 'Kru Aktif Terdaftar', value: stats?.totalActiveCrew ?? '-', icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
+    { title: 'Kru Hadir Hari Ini', value: stats?.totalAttendancesToday ?? '-', icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/20' },
     { title: 'Peringatan Over-budget', value: '0', icon: AlertCircle, color: 'text-rose-500', bg: 'bg-rose-100 dark:bg-rose-900/30' },
   ];
 
@@ -20,14 +44,18 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, i) => {
+        {statCards.map((stat, i) => {
           const Icon = stat.icon;
           return (
             <Card key={i} className="border-0 shadow-sm transition-all hover:shadow-md">
               <CardContent className="p-6 flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-slate-500">{stat.title}</p>
-                  <p className="text-3xl font-bold">{stat.value}</p>
+                  {isLoading ? (
+                    <Loader2 className="w-6 h-6 animate-spin text-slate-300" />
+                  ) : (
+                    <p className="text-3xl font-bold">{stat.value}</p>
+                  )}
                 </div>
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.bg}`}>
                   <Icon className={`w-6 h-6 ${stat.color}`} />
@@ -53,25 +81,42 @@ export default function AdminDashboard() {
 
         <Card className="lg:col-span-3 border-0 shadow-sm">
           <CardHeader>
-            <CardTitle>Aktivitas Mandor Hari Ini</CardTitle>
+            <CardTitle>Aktivitas Kru Hari Ini</CardTitle>
           </CardHeader>
           <CardContent>
-             {/* Placeholder for list */}
-             <div className="space-y-4">
-              <div className="flex items-center space-x-4 border-b pb-4 last:border-0 dark:border-slate-800">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">A</div>
-                <div>
-                  <p className="text-sm font-medium">Andi (Mandor)</p>
-                  <p className="text-xs text-slate-500">Clock-in di Proyek Ruko pada 07:15</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4 border-b pb-4 last:border-0 dark:border-slate-800">
-                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">B</div>
-                <div>
-                  <p className="text-sm font-medium">Budi (Mandor)</p>
-                  <p className="text-xs text-slate-500">Kunci Target di Proyek Perumahan</p>
-                </div>
-              </div>
+             <div className="space-y-4 max-h-[380px] overflow-y-auto pr-2 pb-2">
+               {isLoading ? (
+                 <div className="flex justify-center items-center h-32">
+                   <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                 </div>
+               ) : activities.length === 0 ? (
+                 <div className="text-center text-slate-500 py-8 text-sm">
+                   Belum ada aktivitas hari ini.
+                 </div>
+               ) : (
+                 activities.map((act) => {
+                   const initial = act.userName.charAt(0).toUpperCase();
+                   const colorClass = act.type === 'CLOCK_IN' 
+                      ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' 
+                      : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30';
+                   const timeString = new Date(act.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+                   return (
+                    <div key={act.id} className="flex items-start space-x-4 border-b pb-4 last:border-0 dark:border-slate-800">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0 ${colorClass}`}>
+                        {initial}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{act.userName} <span className="text-xs text-slate-400 font-normal">({act.userRole})</span></p>
+                        <p className="text-xs text-slate-500 leading-snug mt-0.5">{act.description}</p>
+                      </div>
+                      <div className="text-xs font-semibold text-slate-400 shrink-0">
+                        {timeString}
+                      </div>
+                    </div>
+                   );
+                 })
+               )}
             </div>
           </CardContent>
         </Card>
