@@ -204,7 +204,7 @@ export default function MandorDashboard() {
         id: 'no-clockout',
         type: 'info',
         title: 'Progres Hari Ini',
-        desc: 'Jangan lupa lapor target & foto progres hari ini ya mandor!',
+        desc: `Jangan lupa lapor target & foto progres hari ini ya, ${user?.nama ? user.nama.split(' ')[0] : 'Tim'}!`,
         time: 'Baru saja'
       });
       notifs.push({
@@ -226,6 +226,29 @@ export default function MandorDashboard() {
     return notifs;
   }, [isClockedIn, isClockedOut, todayAttendance]);
 
+  // Calculate Lateness for Today
+  let isLate = false;
+  let latenessText = null;
+  if (todayAttendance?.clockIn) {
+    const clockInDate = new Date(todayAttendance.clockIn);
+    const expectedTime = todayAttendance.jamKerjaMulai || '08:00';
+    const [h, m] = expectedTime.split(':').map(Number);
+    const expectedDate = new Date(todayAttendance.clockIn);
+    expectedDate.setHours(h, m, 0, 0);
+
+    const diffMs = clockInDate.getTime() - expectedDate.getTime();
+    if (diffMs > 0) {
+      isLate = true;
+      const diffMins = Math.floor(diffMs / 60000);
+      const hours = Math.floor(diffMins / 60);
+      const mins = diffMins % 60;
+      if (hours > 0) {
+        latenessText = `Telat ${hours}j ${mins}m`;
+      } else {
+        latenessText = `Telat ${mins}m`;
+      }
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-28 font-sans">
@@ -561,15 +584,22 @@ export default function MandorDashboard() {
               <div className="relative pl-3 space-y-6 before:absolute before:inset-y-0 before:left-[11px] before:w-[2px] before:bg-slate-100 dark:before:bg-slate-800">
                 {/* Item 1: Absen Masuk */}
                 <div className="relative flex gap-4 items-start">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 relative z-10 shadow-sm shadow-emerald-500/30 ring-4 ring-white dark:ring-slate-900">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 relative z-10 shadow-sm ring-4 ring-white dark:ring-slate-900 ${isLate ? 'bg-rose-500 text-white shadow-rose-500/30' : 'bg-emerald-500 text-white shadow-emerald-500/30'}`}>
                     <MapPin className="w-3 h-3" />
                   </div>
                   <div className="flex-1 pt-0.5">
                     <p className="text-xs font-black text-slate-800 dark:text-slate-100 leading-none mb-1.5">Absen Masuk</p>
-                    <p className="text-[10px] font-bold text-slate-500">{todayAttendance?.namaProyek || 'Proyek Lapangan'}</p>
+                    <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1.5 flex-wrap">
+                      <span>{todayAttendance?.project?.namaProyek || 'Proyek Lapangan'}</span>
+                      {isLate && latenessText && (
+                        <span className="text-rose-600 bg-rose-50 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800 px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider shadow-sm flex items-center gap-1">
+                          <AlertTriangle className="w-2.5 h-2.5" /> {latenessText}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="shrink-0 pt-0.5 text-right">
-                    <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-md">
+                    <span className={`text-[10px] font-black px-2 py-1 rounded-md ${isLate ? 'text-rose-600 bg-rose-50 dark:bg-rose-900/30' : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30'}`}>
                       {todayAttendance?.clockIn ? new Date(todayAttendance.clockIn).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                     </span>
                   </div>
