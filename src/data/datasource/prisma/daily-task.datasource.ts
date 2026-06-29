@@ -38,6 +38,17 @@ export const findAllDailyTasksByUserAndProject = (userId: string, projectId: num
     orderBy: { tanggal: 'desc' },
   });
 
+export const findAllDailyTasksByUser = (userId: string) =>
+  prisma.dailyTask.findMany({
+    where: {
+      userId,
+    },
+    include: {
+      project: { select: { namaProyek: true } }
+    },
+    orderBy: { tanggal: 'desc' },
+  });
+
 export const insertDailyTask = (data: Prisma.DailyTaskUncheckedCreateInput) =>
   prisma.dailyTask.create({ data: { ...data, isLockedPagi: true } });
 

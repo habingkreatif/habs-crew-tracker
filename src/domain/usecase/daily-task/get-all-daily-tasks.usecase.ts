@@ -3,8 +3,11 @@ import { DailyTaskEntity } from '../../entities/daily-task.entity';
 
 export async function getAllDailyTasksUseCase(
   userId: string,
-  projectId: number,
-  repo: IDailyTaskRepository
-): Promise<DailyTaskEntity[]> {
-  return repo.findAllByUserAndProject(userId, projectId);
+  repo: IDailyTaskRepository,
+  projectId?: number
+): Promise<any[]> {
+  if (projectId) {
+    return repo.findAllByUserAndProject(userId, projectId);
+  }
+  return repo.findAllByUser(userId);
 }

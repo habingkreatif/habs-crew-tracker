@@ -45,10 +45,14 @@ export class PrismaDailyTaskRepository implements IDailyTaskRepository {
   }
 
   async findAllByUserAndProject(userId: string, projectId: number): Promise<DailyTaskEntity[]> {
-    // Reusing the same datasource method because we previously removed the date filter inside it.
-    // If the datasource needs a specific "find all" we can create it, but for now we'll create a dedicated one in datasource just in case.
     const models = await dailyTaskDatasource.findAllDailyTasksByUserAndProject(userId, projectId);
     return models.map(toDomainEntity);
+  }
+
+  async findAllByUser(userId: string): Promise<any[]> {
+    const models = await dailyTaskDatasource.findAllDailyTasksByUser(userId);
+    // Returning any[] because it includes `project` which is not part of DailyTaskEntity natively, but needed for UI
+    return models;
   }
 
   async create(data: { userId: string, projectId: number, namaPekerjaan: string, tanggal: Date }): Promise<DailyTaskEntity> {
