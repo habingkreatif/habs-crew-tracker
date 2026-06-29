@@ -96,7 +96,7 @@ export default function MandorDashboard() {
   const greeting = hour < 11 ? 'Selamat Pagi' : hour < 15 ? 'Selamat Siang' : hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
   const currentDate = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-  // Motivasi Harian
+  // Motivasi Harian (Rotasi per hari)
   const quotes = [
     "Kerja keras hari ini, panen esok hari.",
     "Utamakan keselamatan, keluarga menanti di rumah.",
@@ -108,20 +108,39 @@ export default function MandorDashboard() {
   ];
   const todayIndex = new Date().getDate() % quotes.length;
 
+  // Tips K3 / Safety (Rotasi per hari)
+  const safetyTips = [
+    "Utamakan K3. Gunakan Helm & Rompi saat di lapangan.",
+    "Cek kembali perancah (scaffolding) sebelum memanjat.",
+    "Pastikan area kerja bebas dari genangan air dan kabel terbuka.",
+    "Gunakan sarung tangan saat menangani material tajam.",
+    "Istirahat sejenak jika merasa pusing atau kelelahan berlebih.",
+  ];
+  const safetyIndex = (new Date().getDate() + 2) % safetyTips.length;
+
+  // Simulasi Info Cuaca (Rotasi per hari / jam) - Nanti bisa diganti API Cuaca beneran
+  const weatherTips = [
+    { title: "Info Cuaca", desc: "Cuaca cerah hari ini. Jaga hidrasi, perbanyak minum air putih!", icon: <Flame className="w-5 h-5 text-white" />, bg: "from-amber-500 to-orange-600" },
+    { title: "Waspada Hujan", desc: "Prediksi hujan sore nanti. Tutup material rawan air seperti semen.", icon: <CloudRain className="w-5 h-5 text-white" />, bg: "from-blue-500 to-indigo-600" },
+    { title: "Cuaca Mendung", desc: "Cahaya mungkin kurang optimal, pastikan penerangan area kerja cukup.", icon: <CloudRain className="w-5 h-5 text-white" />, bg: "from-slate-500 to-slate-700" }
+  ];
+  const weatherIndex = (new Date().getDate() + new Date().getHours()) % weatherTips.length;
+  const activeWeather = weatherTips[weatherIndex];
+
   // Info Banners Data
   const banners = [
     {
       title: "Kabar Hari Ini",
-      desc: "Utamakan K3. Gunakan Helm & Rompi saat di lapangan.",
+      desc: safetyTips[safetyIndex],
       icon: <AlertTriangle className="w-5 h-5 text-white" />,
-      bg: "from-blue-500 to-indigo-600",
+      bg: "from-purple-500 to-fuchsia-600",
       iconBg: "bg-white/20 border-white/20"
     },
     {
-      title: "Info Cuaca",
-      desc: "Waspada hujan sore ini. Pastikan material rawan air tertutup rapat.",
-      icon: <CloudRain className="w-5 h-5 text-white" />,
-      bg: "from-purple-500 to-pink-600",
+      title: activeWeather.title,
+      desc: activeWeather.desc,
+      icon: activeWeather.icon,
+      bg: activeWeather.bg,
       iconBg: "bg-white/20 border-white/20"
     },
     {
