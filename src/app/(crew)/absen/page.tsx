@@ -323,7 +323,9 @@ export default function AbsenPage() {
               ) : (
                 <Select value={selectedProjectId} onValueChange={v => setSelectedProjectId(v || '')}>
                   <SelectTrigger className="h-14 text-base px-5 font-bold border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-primary/30 bg-slate-50 dark:bg-slate-950/50">
-                    <SelectValue placeholder="Pilih proyek tempat bekerja..." />
+                    <div className="flex-1 text-left truncate">
+                      {selectedProject ? selectedProject.namaProyek : <span className="text-muted-foreground">Pilih proyek tempat bekerja...</span>}
+                    </div>
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl">
                     {projects.map(p => (
