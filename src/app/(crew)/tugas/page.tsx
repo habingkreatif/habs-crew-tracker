@@ -174,17 +174,42 @@ export default function TugasPage() {
 
   if (!todayAttendance) {
     return (
-      <div className="p-5 space-y-6 flex flex-col items-center justify-center h-[80vh] text-center animate-in zoom-in-95 duration-500">
-        <div className="w-24 h-24 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4 shadow-xl shadow-rose-500/20">
-          <CheckSquare className="w-12 h-12" />
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-32 font-sans relative overflow-hidden">
+        {/* M-Banking Solid Header Background */}
+        <div className="absolute top-0 left-0 w-full h-[250px] bg-primary rounded-b-[40px] z-0 shadow-lg overflow-hidden">
+          <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-[-10%] left-[-10%] w-48 h-48 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
+          <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
         </div>
-        <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100">Belum Absen Masuk</h2>
-        <p className="text-slate-500 font-medium max-w-[280px]">
-          Anda harus melakukan absen masuk terlebih dahulu sebelum dapat mengirim laporan pekerjaan.
-        </p>
-        <Button size="lg" onClick={() => router.push('/absen')} className="mt-6 rounded-2xl px-8 h-14 font-bold shadow-lg shadow-primary/30">
-          Ke Halaman Absen
-        </Button>
+
+        <div className="pt-12 pb-24 px-6 relative z-10">
+          <header className="flex justify-between items-start">
+            <div>
+              <p className="text-white/80 font-bold tracking-widest text-[10px] mb-1 uppercase drop-shadow-sm">Aktivitas Lapangan</p>
+              <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-md">Laporan Tugas</h1>
+            </div>
+            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 text-white shadow-sm">
+              <CheckSquare className="w-5 h-5" />
+            </div>
+          </header>
+        </div>
+
+        <div className="px-5 relative z-20 -mt-16 animate-in fade-in zoom-in-95 duration-500">
+          <Card className="border-0 shadow-2xl shadow-primary/20 dark:shadow-black/50 bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden relative">
+            <CardContent className="p-8 space-y-6 flex flex-col items-center justify-center text-center py-12">
+              <div className="w-24 h-24 bg-rose-50 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mb-2 shadow-xl shadow-rose-500/10 border border-rose-100 dark:border-rose-800/50">
+                <CheckSquare className="w-12 h-12" />
+              </div>
+              <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100">Belum Absen Masuk</h2>
+              <p className="text-slate-500 font-medium max-w-[280px]">
+                Anda harus melakukan absen masuk terlebih dahulu sebelum dapat mengirim laporan pekerjaan.
+              </p>
+              <Button size="lg" onClick={() => router.push('/absen')} className="mt-6 rounded-2xl w-full h-14 font-bold shadow-lg shadow-primary/30 active:scale-95 transition-transform bg-primary text-white">
+                Ke Halaman Absen
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -208,23 +233,28 @@ export default function TugasPage() {
   const sortedDates = Object.keys(groupedReports).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-32">
-      {/* Header Premium Clean */}
-      <div className="relative pt-12 pb-14 px-6 bg-white dark:bg-black rounded-b-[40px] shadow-sm overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] translate-x-1/2 -translate-y-1/4 pointer-events-none"></div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-32 font-sans relative overflow-hidden">
+      {/* M-Banking Solid Header Background */}
+      <div className="absolute top-0 left-0 w-full h-[250px] bg-primary rounded-b-[40px] z-0 shadow-lg overflow-hidden">
+        <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-48 h-48 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
+        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
+      </div>
 
-        <header className="relative z-10 flex justify-between items-center">
+      {/* Header Clean Light */}
+      <div className="pt-12 pb-24 px-6 relative z-10">
+        <header className="flex justify-between items-start">
           <div>
-            <p className="text-primary font-bold tracking-widest text-[10px] mb-1.5 uppercase">Aktivitas Lapangan</p>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Laporan Tugas</h1>
+            <p className="text-white/80 font-bold tracking-widest text-[10px] mb-1 uppercase drop-shadow-sm">Aktivitas Lapangan</p>
+            <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-md">Laporan Tugas</h1>
           </div>
-          <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center border border-slate-200 dark:border-slate-800">
-            {hasSubmittedToday ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Send className="w-5 h-5 text-slate-500" />}
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center border shadow-sm backdrop-blur-md ${hasSubmittedToday ? 'bg-emerald-500 border-emerald-400 text-white shadow-emerald-500/50' : 'bg-white/20 border-white/30 text-white'}`}>
+            {hasSubmittedToday ? <CheckCircle2 className="w-6 h-6" /> : <Send className="w-5 h-5" />}
           </div>
         </header>
       </div>
 
-      <div className="px-5 -mt-6 relative z-20 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="px-5 space-y-6 relative z-20 -mt-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
         {/* APPRECIATION BANNER HARI INI */}
         {hasSubmittedToday && !showForm && (
