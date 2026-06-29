@@ -8,19 +8,37 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
-import { Camera, CheckSquare, Loader2, RefreshCcw, X, Send, Clock, CheckCircle2, PartyPopper, ChevronDown, Sparkles, CalendarDays, ChevronUp } from 'lucide-react';
+import { Camera, CheckSquare, Loader2, RefreshCcw, X, Send, Clock, CheckCircle2, PartyPopper, ChevronDown, Sparkles, CalendarDays, ChevronUp, ArrowLeft, FileSearch } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCamera } from '@/hooks/useCamera';
+
+interface DailyTaskReport {
+  id: number;
+  namaPekerjaan: string;
+  tanggal: string;
+  progressPercentage: number | null;
+  photoProgresUrl: string | null;
+  updatedAt: string;
+}
+
+interface TodayAttendance {
+  id: number;
+  projectId: number;
+  clockIn: string;
+  clockOut: string | null;
+  photoSelfieUrl: string;
+}
 
 export default function TugasPage() {
   const router = useRouter();
   const { user } = useAuthStore();
 
-  const [todayAttendance, setTodayAttendance] = useState<any>(null);
+  const [todayAttendance, setTodayAttendance] = useState<TodayAttendance | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   // All reports grouped by date
-  const [allReports, setAllReports] = useState<any[]>([]);
+  const [allReports, setAllReports] = useState<DailyTaskReport[]>([]);
 
   // Expanded history dates
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
@@ -46,6 +64,7 @@ export default function TugasPage() {
   const fetchInitialData = async () => {
     try {
       setIsLoading(true);
+      setHasError(false);
 
       const resAtt = await fetch(`/api/attendance/today?userId=${user?.id}`, { cache: 'no-store' });
       const dataAtt = await resAtt.json();
@@ -62,7 +81,7 @@ export default function TugasPage() {
 
           // Cek apakah ada laporan hari ini
           const todayStr = new Date().toISOString().split('T')[0];
-          const hasToday = dataTask.data.some((r: any) => {
+          const hasToday = dataTask.data.some((r: DailyTaskReport) => {
             const rDate = new Date(r.tanggal).toISOString().split('T')[0];
             return rDate === todayStr;
           });
@@ -72,8 +91,8 @@ export default function TugasPage() {
           }
         }
       }
-    } catch (err) {
-      console.error('Gagal fetch data:', err);
+    } catch {
+      setHasError(true);
     } finally {
       setIsLoading(false);
     }
@@ -172,19 +191,55 @@ export default function TugasPage() {
     );
   }
 
+  // === UI: BELUM ABSEN MASUK ===
   if (!todayAttendance) {
     return (
-      <div className="p-5 space-y-6 flex flex-col items-center justify-center h-[80vh] text-center animate-in zoom-in-95 duration-500">
-        <div className="w-24 h-24 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4 shadow-xl shadow-rose-500/20">
-          <CheckSquare className="w-12 h-12" />
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-32 font-sans relative overflow-hidden">
+        {/* M-Banking Solid Header Background */}
+        <div className="absolute top-0 left-0 w-full h-[240px] bg-primary rounded-b-[40px] z-0 shadow-lg overflow-hidden">
+          <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-[-10%] left-[-10%] w-48 h-48 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
+          <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
         </div>
-        <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100">Belum Absen Masuk</h2>
-        <p className="text-slate-500 font-medium max-w-[280px]">
-          Anda harus melakukan absen masuk terlebih dahulu sebelum dapat mengirim laporan pekerjaan.
-        </p>
-        <Button size="lg" onClick={() => router.push('/absen')} className="mt-6 rounded-2xl px-8 h-14 font-bold shadow-lg shadow-primary/30">
-          Ke Halaman Absen
-        </Button>
+
+        {/* Header Clean Light */}
+        <div className="pt-6 pb-20 px-6 relative z-10">
+          <div className="flex items-center mb-6">
+            <button 
+              onClick={() => router.push('/home')}
+              className="w-10 h-10 flex items-center justify-center text-white/90 hover:text-white transition-all active:scale-90 shrink-0 -ml-2"
+            >
+              <ArrowLeft className="w-7 h-7 stroke-[2.5px] drop-shadow-md" />
+            </button>
+            <h1 className="text-lg font-extrabold text-white ml-1 drop-shadow-md tracking-tight">Laporan Tugas</h1>
+          </div>
+          <header className="flex justify-between items-start">
+            <div>
+              <p className="text-white/80 font-bold tracking-widest text-[10px] mb-1 uppercase drop-shadow-sm">Aktivitas Lapangan</p>
+              <h1 className="text-2xl font-black tracking-tight text-white drop-shadow-md">Tugas Hari Ini</h1>
+            </div>
+            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 text-white shadow-sm shrink-0">
+              <CheckSquare className="w-5 h-5" />
+            </div>
+          </header>
+        </div>
+
+        <div className="px-5 relative z-20 -mt-10 animate-in fade-in zoom-in-95 duration-500">
+          <Card className="border-0 shadow-2xl shadow-primary/20 dark:shadow-black/50 bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden relative">
+            <CardContent className="p-8 space-y-6 flex flex-col items-center justify-center text-center py-12">
+              <div className="w-24 h-24 bg-rose-50 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mb-2 shadow-xl shadow-rose-500/10 border border-rose-100 dark:border-rose-800/50">
+                <CheckSquare className="w-12 h-12" />
+              </div>
+              <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100">Belum Absen Masuk</h2>
+              <p className="text-slate-500 font-medium max-w-[280px]">
+                Anda harus melakukan absen masuk terlebih dahulu sebelum dapat mengirim laporan pekerjaan.
+              </p>
+              <Button size="lg" onClick={() => router.push('/absen')} className="mt-6 rounded-2xl w-full h-14 font-bold shadow-lg shadow-primary/30 active:scale-95 transition-transform bg-primary text-white">
+                Ke Halaman Absen
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -207,24 +262,39 @@ export default function TugasPage() {
   // Sort dates descending
   const sortedDates = Object.keys(groupedReports).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
+  // === UI: FORM TUGAS UTAMA ===
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-32">
-      {/* Header Premium Clean */}
-      <div className="relative pt-12 pb-14 px-6 bg-white dark:bg-black rounded-b-[40px] shadow-sm overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] translate-x-1/2 -translate-y-1/4 pointer-events-none"></div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-40 font-sans relative overflow-hidden">
+      {/* M-Banking Solid Header Background */}
+      <div className="absolute top-0 left-0 w-full h-[240px] bg-primary rounded-b-[40px] z-0 shadow-lg overflow-hidden">
+        <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-48 h-48 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
+        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
+      </div>
 
-        <header className="relative z-10 flex justify-between items-center">
+      {/* Header Clean Light */}
+      <div className="pt-6 pb-20 px-6 relative z-10">
+        <div className="flex items-center mb-6">
+          <button 
+            onClick={() => router.push('/home')}
+            className="w-10 h-10 flex items-center justify-center text-white/90 hover:text-white transition-all active:scale-90 shrink-0 -ml-2"
+          >
+            <ArrowLeft className="w-7 h-7 stroke-[2.5px] drop-shadow-md" />
+          </button>
+          <h1 className="text-lg font-extrabold text-white ml-1 drop-shadow-md tracking-tight">Laporan Tugas</h1>
+        </div>
+        <header className="flex justify-between items-start">
           <div>
-            <p className="text-primary font-bold tracking-widest text-[10px] mb-1.5 uppercase">Aktivitas Lapangan</p>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Laporan Tugas</h1>
+            <p className="text-white/80 font-bold tracking-widest text-[10px] mb-1 uppercase drop-shadow-sm">Aktivitas Lapangan</p>
+            <h1 className="text-2xl font-black tracking-tight text-white drop-shadow-md">Tugas Hari Ini</h1>
           </div>
-          <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center border border-slate-200 dark:border-slate-800">
-            {hasSubmittedToday ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Send className="w-5 h-5 text-slate-500" />}
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center border shadow-sm backdrop-blur-md shrink-0 ${hasSubmittedToday ? 'bg-emerald-500 border-emerald-400 text-white shadow-emerald-500/50' : 'bg-white/20 border-white/30 text-white'}`}>
+            {hasSubmittedToday ? <CheckCircle2 className="w-6 h-6" /> : <Send className="w-5 h-5" />}
           </div>
         </header>
       </div>
 
-      <div className="px-5 -mt-6 relative z-20 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="px-5 space-y-6 relative z-20 -mt-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
         {/* APPRECIATION BANNER HARI INI */}
         {hasSubmittedToday && !showForm && (
@@ -256,7 +326,6 @@ export default function TugasPage() {
         {/* ONE-STEP REPORT FORM */}
         {(!hasSubmittedToday || showForm) && (
           <Card className="border-0 shadow-xl shadow-slate-200/50 dark:shadow-black/50 bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden relative">
-
             {hasSubmittedToday && (
               <Button
                 type="button"
@@ -269,16 +338,15 @@ export default function TugasPage() {
               </Button>
             )}
 
-            <form onSubmit={handleSubmitReport}>
+            <form id="tugas-form" onSubmit={handleSubmitReport}>
               <CardContent className="p-6 pt-8 space-y-8">
-
                 {/* 1. Deskripsi */}
                 <div className="space-y-3">
                   <Label htmlFor="namaPekerjaan" className="text-[10px] font-bold uppercase tracking-widest text-slate-400">1. Aktivitas Apa Saja?</Label>
                   <Input
                     id="namaPekerjaan"
                     required
-                    className="h-14 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-base px-5 focus-visible:ring-primary/30 font-medium"
+                    className="h-14 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-sm px-5 focus-visible:ring-primary/30 font-semibold shadow-inner"
                     placeholder="Contoh: Pasang bata dinding lantai 2"
                     value={namaPekerjaan}
                     onChange={(e) => setNamaPekerjaan(e.target.value)}
@@ -317,7 +385,7 @@ export default function TugasPage() {
                     <Button type="button" variant="outline" className={`w-full h-24 rounded-3xl border-2 border-dashed transition-all group ${progress > 0 ? 'border-primary/40 bg-primary/5 hover:bg-primary/10 text-primary' : 'border-slate-200 dark:border-slate-800 text-slate-400'}`} onClick={handleOpenActiveCamera}>
                       <div className="flex flex-col items-center gap-2 group-hover:scale-105 transition-transform">
                         <Camera className="w-6 h-6" />
-                        <span className="font-bold text-xs">Ketuk untuk Ambil Foto</span>
+                        <span className="font-bold text-xs">Ketuk untuk Ambil Foto Lapangan</span>
                       </div>
                     </Button>
                   ) : (
@@ -325,23 +393,12 @@ export default function TugasPage() {
                       <img src={confirmedPhotoUrl} alt="Progres" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
                         <Button type="button" size="sm" variant="secondary" className="rounded-full font-bold shadow-xl bg-white text-slate-900" onClick={handleOpenActiveCamera}>
-                          <RefreshCcw className="w-4 h-4 mr-2" /> Ganti
+                          <RefreshCcw className="w-4 h-4 mr-2" /> Ganti Foto
                         </Button>
                       </div>
                     </div>
                   )}
                 </div>
-
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  size="lg"
-                  className={`w-full h-14 rounded-2xl font-bold text-base shadow-xl active:scale-95 transition-all mt-4 ${isDone ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20 text-white' : 'bg-slate-900 dark:bg-white dark:text-slate-900 hover:bg-slate-800 shadow-slate-900/20'}`}
-                  disabled={isSubmitting || (progress > 0 && !confirmedPhotoFile) || !namaPekerjaan}
-                >
-                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : (isDone ? <Sparkles className="w-4 h-4 mr-2" /> : <Send className="w-4 h-4 mr-2" />)}
-                  {isDone ? 'Kirim Laporan Final' : 'Kirim Laporan Progres'}
-                </Button>
               </CardContent>
             </form>
           </Card>
@@ -349,7 +406,7 @@ export default function TugasPage() {
 
         {/* ALL HISTORY SECTION (COLLAPSIBLE PER DAY) */}
         {sortedDates.length > 0 && (
-          <div className="pt-8 space-y-4">
+          <div className="pt-8 space-y-4 pb-8">
             <div className="flex items-center gap-2 px-2">
               <CalendarDays className="w-5 h-5 text-slate-400" />
               <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">Riwayat Laporan</h3>
@@ -384,9 +441,13 @@ export default function TugasPage() {
                     {isExpanded && (
                       <div className="space-y-3 pl-2 pr-2 pb-2 animate-in slide-in-from-top-2 fade-in duration-300">
                         {dayReports.map((report: any) => (
-                          <Card key={report.id} className="border-0 bg-white dark:bg-slate-900 shadow-md shadow-slate-200/50 dark:shadow-none rounded-[20px] overflow-hidden">
+                           <Card key={report.id} className="border-0 bg-white dark:bg-slate-900 shadow-md shadow-slate-200/50 dark:shadow-none rounded-[20px] overflow-hidden relative">
+                            {/* Decorative completion indicator */}
+                            {report.progressPercentage === 100 && (
+                               <div className="absolute top-0 right-0 w-8 h-8 bg-emerald-500/10 rounded-bl-[20px]"></div>
+                            )}
                             <CardContent className="p-4 flex gap-4 items-center">
-                              <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 relative">
+                              <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 relative border border-slate-100 dark:border-slate-700">
                                 {report.photoProgresUrl ? (
                                   <img src={report.photoProgresUrl} alt="History" className="w-full h-full object-cover" />
                                 ) : (
@@ -403,7 +464,7 @@ export default function TugasPage() {
                                 </p>
                               </div>
                               <div className="text-right shrink-0">
-                                <span className={`inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[10px] font-black tracking-wider ${report.progressPercentage === 100 ? 'bg-emerald-100 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
+                                <span className={`inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[10px] font-black tracking-wider ${report.progressPercentage === 100 ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 border border-emerald-200 dark:border-emerald-800' : 'bg-primary/10 text-primary border border-primary/20'}`}>
                                   {report.progressPercentage ?? 0}%
                                 </span>
                               </div>
@@ -419,6 +480,32 @@ export default function TugasPage() {
           </div>
         )}
       </div>
+
+      {/* Sticky Bottom Submit Action */}
+      {(!hasSubmittedToday || showForm) && (
+        <div className="fixed bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-white via-white to-transparent dark:from-slate-950 dark:via-slate-950 z-40 pb-safe animate-in slide-in-from-bottom-full duration-500">
+          <Button
+            type="submit"
+            form="tugas-form"
+            size="lg"
+            className={`w-full h-16 rounded-[20px] text-lg font-black transition-all duration-300 ${(progress > 0 && !confirmedPhotoFile) || !namaPekerjaan || isSubmitting
+              ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700 shadow-none' 
+              : isDone 
+                ? 'bg-emerald-500 hover:bg-emerald-600 shadow-[0_10px_40px_-10px_rgba(16,185,129,0.6)] hover:scale-[1.02] active:scale-95 text-white' 
+                : 'bg-primary hover:bg-primary/90 shadow-[0_10px_40px_-10px_rgba(20,184,166,0.6)] hover:scale-[1.02] active:scale-95 text-white'}`}
+            disabled={isSubmitting || (progress > 0 && !confirmedPhotoFile) || !namaPekerjaan}
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-5 h-5 animate-spin mr-2" />
+            ) : isDone ? (
+              <Sparkles className="w-5 h-5 mr-2" />
+            ) : (
+              <Send className="w-5 h-5 mr-2" />
+            )}
+            {isDone ? 'Kirim Laporan Final' : 'Kirim Laporan Progres'}
+          </Button>
+        </div>
+      )}
 
       {/* GLOBAL CAMERA MODAL */}
       {isCameraOpen && (

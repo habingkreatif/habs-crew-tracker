@@ -16,20 +16,24 @@ export async function GET(req: NextRequest) {
     const dateStr = searchParams.get('date');
     const fetchAll = searchParams.get('all') === 'true';
 
-    if (!projectId || !userId) {
-      return apiError('userId dan projectId parameter is required', 'VALIDATION_ERROR', 400);
+    if (!userId) {
+      return apiError('userId parameter is required', 'VALIDATION_ERROR', 400);
+    }
+
+    if (!projectId && !fetchAll) {
+      return apiError('projectId parameter is required if not fetching all', 'VALIDATION_ERROR', 400);
     }
 
     const repo = new PrismaDailyTaskRepository();
     let tasks;
 
     if (fetchAll) {
-      tasks = await getAllDailyTasksUseCase(userId, parseInt(projectId, 10), repo);
+      tasks = await getAllDailyTasksUseCase(userId, repo, projectId ? parseInt(projectId, 10) : undefined);
     } else {
       const date = dateStr ? new Date(dateStr) : new Date();
-      tasks = await getDailyTasksUseCase(userId, parseInt(projectId, 10), date, repo);
+      tasks = await getDailyTasksUseCase(userId, parseInt(projectId!, 10), date, repo);
     }
-    
+
     return apiSuccess(tasks);
   } catch (error: any) {
     if (error instanceof DomainError) {

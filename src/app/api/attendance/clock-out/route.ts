@@ -22,13 +22,14 @@ export async function POST(req: NextRequest) {
     );
 
     return apiSuccess(attendance, 200);
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return apiError(error.issues[0].message, 'VALIDATION_ERROR', 400);
     }
     if (error instanceof DomainError) {
       return apiError(error.message, error.code, 400);
     }
-    return apiError(error.message);
+    const msg = error instanceof Error ? error.message : 'Terjadi kesalahan internal';
+    return apiError(msg);
   }
 }

@@ -41,13 +41,18 @@ export default function LoginLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 relative">
-        {/* Mobile decorative elements */}
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-3xl pointer-events-none lg:hidden" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-3xl pointer-events-none lg:hidden" />
+      <div className="flex-1 flex flex-col relative bg-primary lg:bg-slate-50 dark:lg:bg-slate-950">
+        {/* Mobile Background Accents */}
+        <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[40%] bg-white/10 rounded-full blur-[80px] pointer-events-none lg:hidden" />
+        <div className="absolute top-[20%] left-[-20%] w-[50%] h-[50%] bg-blue-500/20 rounded-full blur-[80px] pointer-events-none lg:hidden" />
         
-        <main className="w-full max-w-[420px] animate-in-up relative z-10">
-          {children}
+        {/* Pattern overlay for mobile */}
+        <div className="absolute inset-0 opacity-10 lg:hidden bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] pointer-events-none mix-blend-overlay"></div>
+
+        <main className="w-full flex-1 flex flex-col relative z-10 lg:items-center lg:justify-center sm:p-12">
+          <div className="w-full max-w-[420px] h-full flex flex-col">
+            {children}
+          </div>
         </main>
       </div>
     </div>
