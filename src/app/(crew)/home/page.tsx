@@ -1,12 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, MapPin, CheckSquare, Clock, Loader2, PlayCircle, Building, ChevronRight } from 'lucide-react';
+import { LogOut, User, MapPin, CheckSquare, Clock, Loader2, Building, ChevronRight, AlertTriangle, Home, CloudRain, ThumbsUp, Bell, Flame, Target, MessageSquareWarning, CheckCircle2, ArrowLeft, ClipboardList } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
 import { toast } from 'sonner';
 
 export default function MandorDashboard() {
@@ -17,12 +26,8 @@ export default function MandorDashboard() {
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      fetchData();
-    }
-  }, [user]);
+  const [activeBanner, setActiveBanner] = useState(0);
+  const [personalGreeting, setPersonalGreeting] = useState('');
 
   const fetchData = async () => {
     try {
@@ -46,18 +51,34 @@ export default function MandorDashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    toast.loading('Sedang keluar...', { id: 'logout' });
-    try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.warn('Logout network error ignored:', error);
-    } finally {
-      logout();
-      toast.dismiss('logout');
-      router.push('/login');
+  useEffect(() => {
+    if (user) {
+      fetchData();
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveBanner((prev) => (prev + 1) % 3);
+    }, 4000);
+
+    // Random Personal Greeting
+    const hr = new Date().getHours();
+    let options = [];
+    if (hr < 11) {
+      options = ["Udah ngopi belum hari ini? ☕", "Semangat pagi, siap bangun pondasi! 🏗️", "Pagi! Pemanasan dulu yuk. 💪"];
+    } else if (hr < 15) {
+      options = ["Matahari terik, banyak minum ya! 💧", "Fokus! Target hari ini hampir kelar 🎯", "Panas banget, tapi tetap semangat! 🧊"];
+    } else {
+      options = ["Waktunya rekap hasil kerja! 📝", "Hampir beres, bentar lagi istirahat. 🛋️", "Kerja bagus hari ini, mantap! 🏆"];
+    }
+    setPersonalGreeting(options[Math.floor(Math.random() * options.length)]);
+
+    return () => clearInterval(timer);
+  }, []);
+
+
+
 
   const isClockedIn = !!todayAttendance;
   const isClockedOut = !!todayAttendance?.clockOut;
@@ -86,32 +107,125 @@ export default function MandorDashboard() {
     "Semangat pantang menyerah adalah kunci sukses."
   ];
   const todayIndex = new Date().getDate() % quotes.length;
-  const quote = quotes[todayIndex];
 
-  // Kalkulasi Keterlambatan
-  let latenessText = '';
-  let latenessColor = '';
-
-  if (isClockedIn && todayAttendance?.project?.jamKerjaMulai) {
-    const clockInTime = new Date(todayAttendance.clockIn);
-    const [jamMasuk, menitMasuk] = todayAttendance.project.jamKerjaMulai.split(':').map(Number);
-
-    const limitTime = new Date(todayAttendance.clockIn);
-    limitTime.setHours(jamMasuk, menitMasuk, 0, 0);
-
-    const diffMs = clockInTime.getTime() - limitTime.getTime();
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-
-    if (diffMinutes > 0) {
-      const jam = Math.floor(diffMinutes / 60);
-      const mnt = diffMinutes % 60;
-      latenessText = `Telat ${jam > 0 ? `${jam}j ` : ''}${mnt}m`;
-      latenessColor = 'border-rose-400/30 bg-rose-500/20 text-rose-300';
-    } else {
-      latenessText = 'Tepat Waktu';
-      latenessColor = 'border-emerald-400/30 bg-emerald-500/20 text-emerald-300';
+  // Info Banners Data
+  const banners = [
+    {
+      title: "Kabar Hari Ini",
+      desc: "Utamakan K3. Gunakan Helm & Rompi saat di lapangan.",
+      icon: <AlertTriangle className="w-5 h-5 text-white" />,
+      bg: "from-blue-500 to-indigo-600",
+      iconBg: "bg-white/20 border-white/20"
+    },
+    {
+      title: "Info Cuaca",
+      desc: "Waspada hujan sore ini. Pastikan material rawan air tertutup rapat.",
+      icon: <CloudRain className="w-5 h-5 text-white" />,
+      bg: "from-purple-500 to-pink-600",
+      iconBg: "bg-white/20 border-white/20"
+    },
+    {
+      title: "Motivasi",
+      desc: quotes[todayIndex],
+      icon: <ThumbsUp className="w-5 h-5 text-white" />,
+      bg: "from-emerald-500 to-teal-600",
+      iconBg: "bg-white/20 border-white/20"
     }
-  }
+  ];
+
+  // Gamification Logic based on real data
+  const gamificationStats = useMemo(() => {
+    if (!history || history.length === 0) return { streak: 0, onTime: 0 };
+
+    // Calculate Streak (consecutive days including today/yesterday)
+    let streak = 0;
+    // unique dates in descending order
+    const uniqueDates = Array.from(new Set(history.map((r: any) => {
+      const d = new Date(r.clockIn);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime();
+    }))).sort((a, b) => b - a);
+
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    const lastDateChecked = currentDate.getTime();
+
+    // If the latest record is not today and not yesterday, streak is broken
+    const latestRecord = uniqueDates[0];
+    const diffToLatest = (lastDateChecked - latestRecord) / (1000 * 3600 * 24);
+
+    if (diffToLatest <= 1) {
+      streak = 1;
+      let prevDate = latestRecord;
+      for (let i = 1; i < uniqueDates.length; i++) {
+        const diff = (prevDate - uniqueDates[i]) / (1000 * 3600 * 24);
+        if (diff === 1) {
+          streak++;
+          prevDate = uniqueDates[i];
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Calculate On Time
+    let onTimeCount = 0;
+    for (const record of history) {
+      const clockInTime = new Date(record.clockIn);
+      const jamMasuk = record.jamKerjaMulai || '08:00';
+      const [jam, menit] = jamMasuk.split(':').map(Number);
+
+      const limitTime = new Date(record.clockIn);
+      limitTime.setHours(jam, menit, 0, 0);
+
+      if (clockInTime.getTime() <= limitTime.getTime()) {
+        onTimeCount++;
+      }
+    }
+    const onTime = Math.round((onTimeCount / history.length) * 100);
+
+    return { streak, onTime };
+  }, [history]);
+
+  // Smart Notifications Logic
+  const smartNotifications = useMemo(() => {
+    const notifs = [];
+    if (!isClockedIn) {
+      notifs.push({
+        id: 'no-clockin',
+        type: 'warning',
+        title: 'Belum Absen Masuk',
+        desc: 'Waktu kerja segera dimulai, yuk absen sekarang sebelum terlambat!',
+        time: 'Baru saja'
+      });
+    } else if (isClockedIn && !isClockedOut) {
+      notifs.push({
+        id: 'no-clockout',
+        type: 'info',
+        title: 'Progres Hari Ini',
+        desc: 'Jangan lupa lapor target & foto progres hari ini ya mandor!',
+        time: 'Baru saja'
+      });
+      notifs.push({
+        id: 'clockin-success',
+        type: 'success',
+        title: 'Absen Berhasil',
+        desc: `Anda absen masuk pukul ${new Date(todayAttendance.clockIn).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`,
+        time: 'Pagi ini'
+      });
+    } else if (isClockedOut) {
+      notifs.push({
+        id: 'clockout-success',
+        type: 'success',
+        title: 'Kerja Selesai',
+        desc: 'Selamat beristirahat! Sampai jumpa besok.',
+        time: 'Baru saja'
+      });
+    }
+    return notifs;
+  }, [isClockedIn, isClockedOut, todayAttendance]);
+
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-28 font-sans">
@@ -127,221 +241,374 @@ export default function MandorDashboard() {
       <div className="pt-12 pb-24 px-6 relative z-10">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center border border-white/30 shadow-sm shrink-0">
+            <button onClick={() => router.push('/profil')} className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center border border-white/30 shadow-sm shrink-0 hover:bg-white/30 transition-colors active:scale-95">
               <span className="font-bold text-xl">{user?.nama?.charAt(0)?.toUpperCase() || 'U'}</span>
-            </div>
+            </button>
             <div>
               <p className="text-white/80 font-medium tracking-wide text-[10px] uppercase mb-0.5 drop-shadow-sm">{currentDate}</p>
               <h1 className="text-xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">
                 {greeting}, <span className="font-black">{user?.nama ? user.nama.split(' ')[0] : 'Memuat...'}</span>
               </h1>
+              <p className="text-white/90 text-[10px] mt-1 font-medium">{personalGreeting}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleLogout} className="rounded-full bg-white/20 backdrop-blur-md hover:bg-white/30 text-white shadow-sm border border-white/30 transition-all h-10 w-10 shrink-0">
-            <LogOut className="w-4 h-4" />
-          </Button>
+          <Sheet>
+            <SheetTrigger render={<Button variant="ghost" size="icon" className="rounded-full bg-white/20 backdrop-blur-md hover:bg-white/30 text-white shadow-sm border border-white/30 transition-all h-10 w-10 shrink-0 relative" />}>
+              <Bell className="w-5 h-5" />
+              {smartNotifications.some(n => n.type === 'warning' || n.type === 'info') && (
+                <div className="absolute top-2 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-primary animate-pulse"></div>
+              )}
+            </SheetTrigger>
+            <SheetContent side="right" showCloseButton={false} className="data-[side=right]:w-full data-[side=right]:max-w-full data-[side=right]:sm:max-w-full h-full pt-6 pb-0 bg-white dark:bg-slate-950 border-l-0 shadow-2xl flex flex-col gap-0 z-[100] px-0">
+              <SheetHeader className="text-left mb-2 shrink-0 px-6">
+                <div className="flex items-center gap-3">
+                  <SheetClose render={<Button variant="ghost" size="icon" className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 shrink-0" />}>
+                    <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                  </SheetClose>
+                  <SheetTitle className="text-2xl font-black text-slate-800 dark:text-slate-100">Notifikasi</SheetTitle>
+                </div>
+              </SheetHeader>
+
+              <div className="overflow-y-auto flex-1 flex flex-col pb-10">
+                {smartNotifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-[50vh] text-slate-400">
+                    <Bell className="w-12 h-12 mb-3 text-slate-200 dark:text-slate-800" />
+                    <p className="font-medium text-sm">Belum ada notifikasi</p>
+                  </div>
+                ) : smartNotifications.map(notif => {
+                  const isUnread = notif.type === 'warning' || notif.type === 'info';
+                  return (
+                    <div key={notif.id} className={`relative px-6 py-5 flex gap-4 items-start border-b border-slate-100 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-900 transition-colors ${isUnread ? 'bg-blue-50/40 dark:bg-blue-900/10' : 'bg-transparent'
+                      }`}>
+                      {isUnread && (
+                        <div className="absolute top-1/2 -translate-y-1/2 left-2 w-1.5 h-1.5 rounded-full bg-blue-500" />
+                      )}
+
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${notif.type === 'warning' ? 'bg-amber-100/60 text-amber-600' :
+                        notif.type === 'info' ? 'bg-blue-100/60 text-blue-600' : 'bg-emerald-100/60 text-emerald-600'
+                        }`}>
+                        {notif.type === 'warning' ? <AlertTriangle className="w-5 h-5" /> :
+                          notif.type === 'info' ? <MessageSquareWarning className="w-5 h-5" /> :
+                            <CheckCircle2 className="w-5 h-5" />}
+                      </div>
+
+                      <div className="flex-1 pr-2">
+                        <div className="flex justify-between items-start mb-1">
+                          <h4 className={`font-bold text-sm ${isUnread ? 'text-slate-800 dark:text-slate-100' : 'text-slate-700 dark:text-slate-300'}`}>{notif.title}</h4>
+                          <span className="text-[10px] font-bold text-slate-400 shrink-0 ml-2 mt-0.5">{notif.time}</span>
+                        </div>
+                        <p className={`text-xs leading-relaxed ${isUnread ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>{notif.desc}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </SheetContent>
+          </Sheet>
         </header>
       </div>
 
       <div className="px-5 space-y-6 relative z-20 -mt-16">
 
-        {/* Floating Balance/Status Card (M-Banking Style) */}
-        <Card className="border-0 shadow-2xl shadow-primary/20 dark:shadow-black/50 bg-white dark:bg-slate-900 rounded-[28px] overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-[100px] pointer-events-none"></div>
-          <CardContent className="p-6">
+        {/* Smart Punch Card (Action Focused) */}
+        <Card className="border-0 shadow-2xl shadow-primary/20 dark:shadow-black/50 bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-bl-full pointer-events-none"></div>
 
-            {/* Top row: Role and Status */}
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Status Kehadiran</p>
-                {isLoading ? (
-                  <div className="h-8 flex items-center"><Loader2 className="w-5 h-5 animate-spin text-slate-300" /></div>
-                ) : (
-                  <h2 className="text-2xl font-black tracking-tight text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                    {isClockedIn && !isClockedOut ? 'Sedang Aktif' : isClockedOut ? 'Selesai Bekerja' : 'Belum Absen'}
-                    {isClockedIn && !isClockedOut && (
-                      <span className="relative flex h-3 w-3 shrink-0">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                      </span>
-                    )}
-                  </h2>
-                )}
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm shrink-0">
-                <p className="text-[10px] font-black uppercase text-primary">{user?.role || 'PEKERJA'}</p>
-              </div>
-            </div>
+          <CardContent className="p-6 relative z-10 flex flex-col gap-6">
 
-            {/* Project Info - Merged like Account Info */}
-            <div className="px-1 mb-5 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-800/50">
-                <Building className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-0.5">Lokasi Proyek Aktif</p>
-                <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm leading-tight">{todayAttendance?.project?.namaProyek || 'Belum Terpilih'}</h3>
-
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="flex items-center gap-1 text-[9px] font-bold text-slate-500">
-                    <Clock className="w-3 h-3" />
-                    <span>{todayAttendance?.project?.jamKerjaMulai || '08:00'} - {todayAttendance?.project?.jamKerjaSelesai || '17:00'}</span>
-                  </div>
-                  {isClockedIn && (
-                    <div className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${latenessColor}`}>
-                      {latenessText}
-                    </div>
+            {/* Top: Project Info Minimalist */}
+            <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-[20px] border border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+                  <Building className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-0.5">Lokasi Proyek Aktif</p>
+                  {isLoading ? (
+                    <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700/50 rounded animate-pulse"></div>
+                  ) : (
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200 text-xs line-clamp-1">{todayAttendance?.project?.namaProyek || 'Belum Terpilih'}</h3>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Journey Tracker - Simplified & Elegant */}
-            <div className="pt-5 border-t border-slate-100 dark:border-slate-800/50">
-              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-4">Perjalanan Hari Ini</p>
-              <div className="flex justify-between items-center relative px-2">
-                <div className="absolute left-6 right-6 top-[10px] h-1 bg-slate-100 dark:bg-slate-800 rounded-full -z-10 overflow-hidden">
-                  <div className="h-full bg-emerald-500 transition-all duration-1000 ease-out" style={{ width: isClockedOut ? '100%' : isClockedIn ? '50%' : '0%' }}></div>
-                </div>
-
-                {steps.map((step, idx) => (
-                  <div key={idx} className="flex flex-col items-center gap-2 z-10 w-12">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-500 ring-4 ring-white dark:ring-slate-900 ${step.completed ? 'bg-emerald-500 text-white shadow-sm' :
-                      step.active ? 'border-[2.5px] border-emerald-500 bg-white dark:bg-slate-900' :
-                        'border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-300'
-                      }`}>
-                      {step.completed && <CheckSquare className="w-3 h-3" />}
-                      {step.active && !step.completed && <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>}
-                    </div>
-                    <span className={`text-[9px] uppercase tracking-widest font-bold transition-colors duration-300 ${step.active || step.completed ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400'
-                      }`}>{step.title}</span>
+            {/* Center: The Smart CTA Button */}
+            <div className="flex flex-col gap-3">
+              {isLoading ? (
+                <div className="w-full h-[72px] bg-slate-100 dark:bg-slate-800 rounded-[20px] animate-pulse"></div>
+              ) : !isClockedIn ? (
+                <div className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 rounded-[20px] p-4 flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-0.5">Status Saat Ini</p>
+                    <h3 className="text-base font-black text-slate-800 dark:text-slate-100 leading-tight">Belum Absen</h3>
                   </div>
-                ))}
+                  <button
+                    onClick={() => router.push('/absen')}
+                    className="shrink-0 relative overflow-hidden group active:scale-95 transition-all rounded-full shadow-lg shadow-emerald-500/20"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
+                    <div className="relative px-5 py-2.5 flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-white" />
+                      <span className="font-bold text-xs text-white">Absen Masuk</span>
+                    </div>
+                  </button>
+                </div>
+              ) : !isClockedOut ? (
+                <div className="w-full bg-slate-50 dark:bg-slate-800/50 border border-emerald-100 dark:border-emerald-900/30 rounded-[20px] p-4 flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <p className="text-[10px] font-extrabold text-emerald-600/70 dark:text-emerald-500/70 uppercase tracking-widest mb-0.5">Status Saat Ini</p>
+                    <h3 className="text-base font-black text-emerald-600 dark:text-emerald-400 leading-tight">Sedang Aktif</h3>
+                  </div>
+                  <button
+                    onClick={() => router.push('/tugas')}
+                    className="shrink-0 relative overflow-hidden group active:scale-95 transition-all rounded-full shadow-lg shadow-blue-500/20"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+                    <div className="relative px-5 py-2.5 flex items-center gap-2">
+                      <CheckSquare className="w-4 h-4 text-white" />
+                      <span className="font-bold text-xs text-white">Lapor Progres</span>
+                    </div>
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-800 rounded-[20px] p-4 flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-0.5">Status Saat Ini</p>
+                    <h3 className="text-base font-black text-slate-700 dark:text-slate-300 leading-tight">Selesai Bekerja</h3>
+                  </div>
+                  <div className="h-10 px-4 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-4 h-4 text-slate-500 dark:text-slate-400 mr-1.5" />
+                    <span className="font-bold text-xs text-slate-600 dark:text-slate-300">Tuntas</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom: Gamification Tags */}
+            <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800/60">
+              <div className="flex-1 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/50 rounded-[20px] p-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
+                  <Flame className="w-4 h-4 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-extrabold text-amber-600/70 dark:text-amber-500/70 uppercase tracking-widest">Streak</p>
+                  <p className="font-black text-amber-600 dark:text-amber-500 text-sm leading-none mt-0.5">{gamificationStats.streak} Hari</p>
+                </div>
+              </div>
+              <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/50 rounded-[20px] p-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center shrink-0">
+                  <Target className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-extrabold text-emerald-600/70 dark:text-emerald-500/70 uppercase tracking-widest">On Time</p>
+                  <p className="font-black text-emerald-600 dark:text-emerald-500 text-sm leading-none mt-0.5">{gamificationStats.onTime}%</p>
+                </div>
               </div>
             </div>
 
           </CardContent>
         </Card>
 
-        {/* Quick Actions - Mobile Banking Grid */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2 px-1">
-            Menu Utama
-          </h3>
-
-          <div className="grid grid-cols-4 gap-4 px-2">
+        {/* Menu Utama (Hub Navigation) */}
+        <div className="pt-2 pb-1">
+          <div className="grid grid-cols-4 gap-3">
             <button
               onClick={() => router.push('/absen')}
               className="flex flex-col items-center gap-2 group active:scale-95 transition-transform"
             >
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:-translate-y-1 ${isClockedIn ? 'bg-amber-500 shadow-amber-500/30 text-white' : 'bg-primary shadow-primary/30 text-white'}`}>
-                <MapPin className="w-6 h-6" />
+              <div className="w-14 h-14 rounded-[20px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none flex items-center justify-center transition-transform relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-teal-50/50 dark:from-emerald-900/10 dark:to-teal-900/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <MapPin className="w-6 h-6 text-emerald-500 relative z-10" />
               </div>
-              <span className="font-bold text-[10px] text-slate-600 dark:text-slate-300 text-center leading-tight">
-                {isClockedIn ? <span>Status<br />Absen</span> : <span>Absen<br />Masuk</span>}
-              </span>
+              <span className="font-bold text-[10px] text-slate-600 dark:text-slate-300">Absen</span>
             </button>
 
             <button
               onClick={() => router.push('/tugas')}
               className="flex flex-col items-center gap-2 group active:scale-95 transition-transform"
             >
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg bg-emerald-500 shadow-emerald-500/30 text-white transition-transform group-hover:-translate-y-1">
-                <CheckSquare className="w-6 h-6" />
+              <div className="w-14 h-14 rounded-[20px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none flex items-center justify-center transition-transform relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50/50 dark:from-blue-900/10 dark:to-indigo-900/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <CheckSquare className="w-6 h-6 text-blue-500 relative z-10" />
               </div>
-              <span className="font-bold text-[10px] text-slate-600 dark:text-slate-300 text-center leading-tight">
-                Lapor<br />Kerja
-              </span>
+              <span className="font-bold text-[10px] text-slate-600 dark:text-slate-300">Lapor</span>
             </button>
 
             <button
               onClick={() => router.push('/riwayat')}
               className="flex flex-col items-center gap-2 group active:scale-95 transition-transform"
             >
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg bg-indigo-500 shadow-indigo-500/30 text-white transition-transform group-hover:-translate-y-1">
-                <Clock className="w-6 h-6" />
+              <div className="w-14 h-14 rounded-[20px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none flex items-center justify-center transition-transform relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-fuchsia-50/50 dark:from-purple-900/10 dark:to-fuchsia-900/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <Clock className="w-6 h-6 text-purple-500 relative z-10" />
               </div>
-              <span className="font-bold text-[10px] text-slate-600 dark:text-slate-300 text-center leading-tight">
-                Riwayat<br />Absen
-              </span>
+              <span className="font-bold text-[10px] text-slate-600 dark:text-slate-300 text-center leading-tight">R. Absen</span>
             </button>
 
             <button
-              onClick={() => { }}
+              onClick={() => router.push('/riwayat-laporan')}
               className="flex flex-col items-center gap-2 group active:scale-95 transition-transform"
             >
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg bg-slate-200 dark:bg-slate-800 shadow-slate-200/50 dark:shadow-black/20 text-slate-500 transition-transform group-hover:-translate-y-1">
-                <User className="w-6 h-6" />
+              <div className="w-14 h-14 rounded-[20px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none flex items-center justify-center transition-transform relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-violet-50/50 dark:from-indigo-900/10 dark:to-violet-900/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <ClipboardList className="w-6 h-6 text-indigo-500 relative z-10" />
               </div>
-              <span className="font-bold text-[10px] text-slate-600 dark:text-slate-300 text-center leading-tight">
-                Profil<br />Akun
-              </span>
+              <span className="font-bold text-[10px] text-slate-600 dark:text-slate-300 text-center leading-tight">R. Lapor</span>
+            </button>
+
+            <button
+              onClick={() => router.push('/profil')}
+              className="flex flex-col items-center gap-2 group active:scale-95 transition-transform"
+            >
+              <div className="w-14 h-14 rounded-[20px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none flex items-center justify-center transition-transform relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-50/50 dark:from-slate-800/50 dark:to-slate-800/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <User className="w-6 h-6 text-slate-600 dark:text-slate-400 relative z-10" />
+              </div>
+              <span className="font-bold text-[10px] text-slate-600 dark:text-slate-300">Profil</span>
             </button>
           </div>
         </div>
-
-      </div>
-
-      {/* Riwayat Absen - Mutasi Rekening Style */}
-      <div className="pt-4 pb-8 space-y-4 px-5">
-        <div className="flex justify-between items-end px-2 mb-2">
-          <div>
-            <h3 className="text-base font-black text-slate-900 dark:text-slate-100 tracking-tight">Riwayat Absensi</h3>
-            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest mt-0.5">Aktivitas Terakhir</p>
-          </div>
-          <button
-            onClick={() => router.push('/riwayat')}
-            className="flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-full transition-colors"
-          >
-            Lihat Semua
-            <ChevronRight className="w-3 h-3" />
-          </button>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-[28px] p-2 shadow-xl shadow-slate-200/40 dark:shadow-black/20 border border-slate-100 dark:border-slate-800">
-          {history.length === 0 && !isLoading && (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-              <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3">
-                <Clock className="w-5 h-5 text-slate-400" />
-              </div>
-              <p className="text-xs font-bold text-slate-500">Belum ada aktivitas</p>
-            </div>
-          )}
-
-          <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
-            {history.map((record: any) => (
-              <div key={record.id} className="p-3.5 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors first:rounded-t-[20px] last:rounded-b-[20px] active:bg-slate-100">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${record.clockOut ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
-                  <CheckSquare className="w-4 h-4" />
+        {/* Info Banner Auto-Sliding */}
+        <div className="mt-6 mb-2 relative overflow-hidden rounded-[20px] shadow-lg">
+          <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${activeBanner * 100}%)` }}>
+            {banners.map((banner, idx) => (
+              <div key={idx} className={`w-full shrink-0 bg-gradient-to-r ${banner.bg} px-4 pt-4 pb-7 text-white flex items-center justify-between relative`}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                <div className="relative z-10 flex-1 pr-2">
+                  <p className="text-[10px] font-bold tracking-wider text-white/80 uppercase mb-1">{banner.title}</p>
+                  <h4 className="text-sm font-bold leading-tight">{banner.desc}</h4>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm text-slate-800 dark:text-slate-200 mb-0.5 truncate">
-                    {record.namaProyek || 'Proyek Lapangan'}
-                  </p>
-                  <p className="text-[10px] font-medium text-slate-500">
-                    {new Date(record.clockIn).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-black text-slate-800 dark:text-slate-100">
-                    {new Date(record.clockIn).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                  {record.clockOut ? (
-                    <p className="text-[10px] font-bold text-emerald-500 flex items-center justify-end gap-1 mt-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      {new Date(record.clockOut).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  ) : (
-                    <p className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mt-0.5">
-                      Aktif
-                    </p>
-                  )}
+                <div className={`relative z-10 w-10 h-10 rounded-full ${banner.iconBg} flex items-center justify-center shrink-0 ml-4 backdrop-blur-sm border`}>
+                  {banner.icon}
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Dots Indicator */}
+          <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-20">
+            {banners.map((_, idx) => (
+              <div
+                key={idx}
+                className={`h-1.5 rounded-full transition-all duration-300 ${activeBanner === idx ? 'w-4 bg-white' : 'w-1.5 bg-white/40'}`}
+              />
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Tracker Mingguan & Timeline Hari Ini */}
+      <div className="pt-4 pb-8 px-5">
+        <div className="bg-white dark:bg-slate-900 rounded-[28px] shadow-xl shadow-slate-200/40 dark:shadow-black/20 border border-slate-100 dark:border-slate-800 overflow-hidden">
+
+          {/* Top Section: Calendar Heatmap */}
+          <div className="p-5 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Aktivitas Minggu Ini</h3>
+              <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-500 bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full uppercase tracking-wider">{gamificationStats.streak} Hari Beruntun</span>
+            </div>
+
+            <div className="flex justify-between items-center px-1">
+              {['S', 'S', 'R', 'K', 'J', 'S', 'M'].map((day, idx) => {
+                const currentDayRaw = new Date().getDay();
+                const currentDayIdx = currentDayRaw === 0 ? 6 : currentDayRaw - 1; // 0 = Senin, 6 = Minggu
+                const isToday = idx === currentDayIdx;
+                const isPast = idx < currentDayIdx;
+                const isActive = isPast || (isToday && isClockedIn);
+
+                return (
+                  <div key={idx} className="flex flex-col items-center gap-1.5">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${isActive
+                      ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                      : isToday
+                        ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-500 ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-slate-900'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                      }`}>
+                      {isActive ? <CheckSquare className="w-3.5 h-3.5" /> : day}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Bottom Section: Timeline Hari Ini */}
+          <div className="p-5">
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Timeline Hari Ini</h3>
+              <button
+                onClick={() => router.push('/riwayat')}
+                className="text-[10px] font-bold text-primary hover:underline flex items-center gap-0.5"
+              >
+                Lihat Semua <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
+
+            {isLoading ? (
+              <div className="animate-pulse space-y-4">
+                <div className="h-10 bg-slate-100 dark:bg-slate-800 rounded-lg w-full"></div>
+              </div>
+            ) : !isClockedIn ? (
+              <div className="flex flex-col items-center justify-center py-4 text-center">
+                <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-2">
+                  <Clock className="w-4 h-4 text-slate-400" />
+                </div>
+                <p className="text-[10px] font-bold text-slate-500">Belum ada aktivitas hari ini</p>
+              </div>
+            ) : (
+              <div className="relative pl-3 space-y-6 before:absolute before:inset-y-0 before:left-[11px] before:w-[2px] before:bg-slate-100 dark:before:bg-slate-800">
+                {/* Item 1: Absen Masuk */}
+                <div className="relative flex gap-4 items-start">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 relative z-10 shadow-sm shadow-emerald-500/30 ring-4 ring-white dark:ring-slate-900">
+                    <MapPin className="w-3 h-3" />
+                  </div>
+                  <div className="flex-1 pt-0.5">
+                    <p className="text-xs font-black text-slate-800 dark:text-slate-100 leading-none mb-1.5">Absen Masuk</p>
+                    <p className="text-[10px] font-bold text-slate-500">{todayAttendance?.namaProyek || 'Proyek Lapangan'}</p>
+                  </div>
+                  <div className="shrink-0 pt-0.5 text-right">
+                    <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-md">
+                      {todayAttendance?.clockIn ? new Date(todayAttendance.clockIn).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Item 2: Lapor Progres / Pulang */}
+                <div className="relative flex gap-4 items-start">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 relative z-10 ring-4 ring-white dark:ring-slate-900 ${isClockedOut
+                    ? 'bg-blue-500 text-white shadow-sm shadow-blue-500/30'
+                    : 'bg-slate-200 dark:bg-slate-800 text-slate-400'
+                    }`}>
+                    {isClockedOut ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                  </div>
+                  <div className="flex-1 pt-0.5">
+                    <p className={`text-xs font-black leading-none mb-1.5 ${isClockedOut ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400'}`}>
+                      {isClockedOut ? 'Selesai Bekerja' : 'Menunggu Laporan'}
+                    </p>
+                    <p className="text-[10px] font-bold text-slate-400">
+                      {isClockedOut ? 'Progres harian dilaporkan' : 'Biasanya jam 17:00'}
+                    </p>
+                  </div>
+                  <div className="shrink-0 pt-0.5 text-right">
+                    {isClockedOut ? (
+                      <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-md">
+                        {todayAttendance?.clockOut ? new Date(todayAttendance.clockOut).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-slate-300 dark:text-slate-600">
+                        --:--
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
     </div>
   );
 }

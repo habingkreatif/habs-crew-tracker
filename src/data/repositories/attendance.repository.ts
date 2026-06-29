@@ -27,7 +27,8 @@ export class PrismaAttendanceRepository implements IAttendanceRepository {
     const models = await attendanceDatasource.findHistoryByUser(userId, limitDays);
     return models.map(m => ({
       ...toDomainEntity(m),
-      namaProyek: (m as any).project?.namaProyek
+      namaProyek: (m as any).project?.namaProyek,
+      jamKerjaMulai: (m as any).project?.jamKerjaMulai
     }));
   }
 
