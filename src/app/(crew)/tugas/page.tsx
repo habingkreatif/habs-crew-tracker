@@ -8,19 +8,37 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
-import { Camera, CheckSquare, Loader2, RefreshCcw, X, Send, Clock, CheckCircle2, PartyPopper, ChevronDown, Sparkles, CalendarDays, ChevronUp, ArrowLeft } from 'lucide-react';
+import { Camera, CheckSquare, Loader2, RefreshCcw, X, Send, Clock, CheckCircle2, PartyPopper, ChevronDown, Sparkles, CalendarDays, ChevronUp, ArrowLeft, FileSearch } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCamera } from '@/hooks/useCamera';
+
+interface DailyTaskReport {
+  id: number;
+  namaPekerjaan: string;
+  tanggal: string;
+  progressPercentage: number | null;
+  photoProgresUrl: string | null;
+  updatedAt: string;
+}
+
+interface TodayAttendance {
+  id: number;
+  projectId: number;
+  clockIn: string;
+  clockOut: string | null;
+  photoSelfieUrl: string;
+}
 
 export default function TugasPage() {
   const router = useRouter();
   const { user } = useAuthStore();
 
-  const [todayAttendance, setTodayAttendance] = useState<any>(null);
+  const [todayAttendance, setTodayAttendance] = useState<TodayAttendance | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   // All reports grouped by date
-  const [allReports, setAllReports] = useState<any[]>([]);
+  const [allReports, setAllReports] = useState<DailyTaskReport[]>([]);
 
   // Expanded history dates
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
@@ -46,6 +64,7 @@ export default function TugasPage() {
   const fetchInitialData = async () => {
     try {
       setIsLoading(true);
+      setHasError(false);
 
       const resAtt = await fetch(`/api/attendance/today?userId=${user?.id}`, { cache: 'no-store' });
       const dataAtt = await resAtt.json();
@@ -62,7 +81,7 @@ export default function TugasPage() {
 
           // Cek apakah ada laporan hari ini
           const todayStr = new Date().toISOString().split('T')[0];
-          const hasToday = dataTask.data.some((r: any) => {
+          const hasToday = dataTask.data.some((r: DailyTaskReport) => {
             const rDate = new Date(r.tanggal).toISOString().split('T')[0];
             return rDate === todayStr;
           });
@@ -72,8 +91,8 @@ export default function TugasPage() {
           }
         }
       }
-    } catch (err) {
-      console.error('Gagal fetch data:', err);
+    } catch {
+      setHasError(true);
     } finally {
       setIsLoading(false);
     }

@@ -25,6 +25,7 @@ export default function MandorDashboard() {
 
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
+  const [todayTasks, setTodayTasks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeBanner, setActiveBanner] = useState(0);
   const [personalGreeting, setPersonalGreeting] = useState('');
@@ -32,20 +33,34 @@ export default function MandorDashboard() {
   const fetchData = async () => {
     try {
       const [resToday, resHistory] = await Promise.all([
-        fetch(`/api/attendance/today?userId=${user?.id}`),
-        fetch(`/api/attendance/history?userId=${user?.id}`)
+        fetch(`/api/attendance/today?userId=${user?.id}`, { cache: 'no-store' }),
+        fetch(`/api/attendance/history?userId=${user?.id}`, { cache: 'no-store' })
       ]);
       const dataToday = await resToday.json();
       const dataHistory = await resHistory.json();
 
       if (dataToday.success && dataToday.data) {
         setTodayAttendance(dataToday.data);
+
+        // Fetch today's task reports alongside attendance
+        const resTask = await fetch(
+          `/api/daily-tasks?userId=${user?.id}&projectId=${dataToday.data.projectId}&all=true`,
+          { cache: 'no-store' }
+        );
+        const dataTask = await resTask.json();
+        if (dataTask.success && dataTask.data) {
+          const todayStr = new Date().toISOString().split('T')[0];
+          const todayOnly = dataTask.data.filter((r: any) => {
+            return new Date(r.tanggal).toISOString().split('T')[0] === todayStr;
+          });
+          setTodayTasks(todayOnly);
+        }
       }
       if (dataHistory.success && dataHistory.data) {
         setHistory(dataHistory.data);
       }
-    } catch (err) {
-      console.error('Gagal fetch data:', err);
+    } catch {
+      // Fetch error silently ignored
     } finally {
       setIsLoading(false);
     }
@@ -57,6 +72,17 @@ export default function MandorDashboard() {
     }
   }, [user]);
 
+  // Auto-refetch when user returns to the tab (e.g. after submitting from /tugas or /absen)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user) {
+        fetchData();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user]);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveBanner((prev) => (prev + 1) % 3);
@@ -64,7 +90,7 @@ export default function MandorDashboard() {
 
     // Random Personal Greeting
     const hr = new Date().getHours();
-    let options = [];
+    let options: string[] = [];
     if (hr < 11) {
       options = ["Udah ngopi belum hari ini? ☕", "Semangat pagi, siap bangun pondasi! 🏗️", "Pagi! Pemanasan dulu yuk. 💪"];
     } else if (hr < 15) {
@@ -77,11 +103,9 @@ export default function MandorDashboard() {
     return () => clearInterval(timer);
   }, []);
 
-
-
-
   const isClockedIn = !!todayAttendance;
   const isClockedOut = !!todayAttendance?.clockOut;
+  const hasReportedToday = todayTasks.length > 0;
 
   // Journey Tracker Steps
   const steps = [
@@ -118,7 +142,7 @@ export default function MandorDashboard() {
   ];
   const safetyIndex = (new Date().getDate() + 2) % safetyTips.length;
 
-  // Simulasi Info Cuaca (Rotasi per hari / jam) - Nanti bisa diganti API Cuaca beneran
+  // Simulasi Info Cuaca (Rotasi per hari / jam)
   const weatherTips = [
     { title: "Info Cuaca", desc: "Cuaca cerah hari ini. Jaga hidrasi, perbanyak minum air putih!", icon: <Flame className="w-5 h-5 text-white" />, bg: "from-amber-500 to-orange-600" },
     { title: "Waspada Hujan", desc: "Prediksi hujan sore nanti. Tutup material rawan air seperti semen.", icon: <CloudRain className="w-5 h-5 text-white" />, bg: "from-blue-500 to-indigo-600" },
@@ -156,9 +180,7 @@ export default function MandorDashboard() {
   const gamificationStats = useMemo(() => {
     if (!history || history.length === 0) return { streak: 0, onTime: 0 };
 
-    // Calculate Streak (consecutive days including today/yesterday)
     let streak = 0;
-    // unique dates in descending order
     const uniqueDates = Array.from(new Set(history.map((r: any) => {
       const d = new Date(r.clockIn);
       d.setHours(0, 0, 0, 0);
@@ -167,10 +189,8 @@ export default function MandorDashboard() {
 
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
-
     const lastDateChecked = currentDate.getTime();
 
-    // If the latest record is not today and not yesterday, streak is broken
     const latestRecord = uniqueDates[0];
     const diffToLatest = (lastDateChecked - latestRecord) / (1000 * 3600 * 24);
 
@@ -188,16 +208,13 @@ export default function MandorDashboard() {
       }
     }
 
-    // Calculate On Time
     let onTimeCount = 0;
     for (const record of history) {
       const clockInTime = new Date(record.clockIn);
       const jamMasuk = record.jamKerjaMulai || '08:00';
       const [jam, menit] = jamMasuk.split(':').map(Number);
-
       const limitTime = new Date(record.clockIn);
       limitTime.setHours(jam, menit, 0, 0);
-
       if (clockInTime.getTime() <= limitTime.getTime()) {
         onTimeCount++;
       }
@@ -207,31 +224,58 @@ export default function MandorDashboard() {
     return { streak, onTime };
   }, [history]);
 
-  // Smart Notifications Logic
+  // Helper: format relative time
+  const formatRelativeTime = (date: Date): string => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+
+    if (diffMins < 1) return 'Baru saja';
+    if (diffMins < 60) return `${diffMins} menit lalu`;
+    if (diffHours < 24) return `${diffHours} jam lalu`;
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+  };
+
+  // Smart Notifications Logic — now aware of todayTasks
   const smartNotifications = useMemo(() => {
-    const notifs = [];
+    const notifs: any[] = [];
     if (!isClockedIn) {
       notifs.push({
         id: 'no-clockin',
         type: 'warning',
         title: 'Belum Absen Masuk',
         desc: 'Waktu kerja segera dimulai, yuk absen sekarang sebelum terlambat!',
-        time: 'Baru saja'
+        time: formatRelativeTime(new Date())
       });
     } else if (isClockedIn && !isClockedOut) {
-      notifs.push({
-        id: 'no-clockout',
-        type: 'info',
-        title: 'Progres Hari Ini',
-        desc: `Jangan lupa lapor target & foto progres hari ini ya, ${user?.nama ? user.nama.split(' ')[0] : 'Tim'}!`,
-        time: 'Baru saja'
-      });
+      if (!hasReportedToday) {
+        notifs.push({
+          id: 'no-report',
+          type: 'info',
+          title: 'Progres Hari Ini',
+          desc: `Jangan lupa lapor target & foto progres hari ini ya, ${user?.nama ? user.nama.split(' ')[0] : 'Tim'}!`,
+          time: formatRelativeTime(new Date(todayAttendance.clockIn))
+        });
+      } else {
+        // Use the latest task's updatedAt for timing
+        const latestTask = todayTasks.reduce((latest: any, t: any) =>
+          new Date(t.updatedAt) > new Date(latest.updatedAt) ? t : latest
+          , todayTasks[0]);
+        notifs.push({
+          id: 'reported-today',
+          type: 'success',
+          title: 'Laporan Terkirim!',
+          desc: `Keren! ${todayTasks.length} laporan progres sudah berhasil dikirim hari ini.`,
+          time: formatRelativeTime(new Date(latestTask.updatedAt))
+        });
+      }
       notifs.push({
         id: 'clockin-success',
         type: 'success',
         title: 'Absen Berhasil',
         desc: `Anda absen masuk pukul ${new Date(todayAttendance.clockIn).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`,
-        time: 'Pagi ini'
+        time: formatRelativeTime(new Date(todayAttendance.clockIn))
       });
     } else if (isClockedOut) {
       notifs.push({
@@ -239,11 +283,11 @@ export default function MandorDashboard() {
         type: 'success',
         title: 'Kerja Selesai',
         desc: 'Selamat beristirahat! Sampai jumpa besok.',
-        time: 'Baru saja'
+        time: formatRelativeTime(new Date(todayAttendance.clockOut))
       });
     }
     return notifs;
-  }, [isClockedIn, isClockedOut, todayAttendance]);
+  }, [isClockedIn, isClockedOut, todayAttendance, todayTasks, hasReportedToday, user]);
 
   // Calculate Lateness for Today
   let isLate = false;
@@ -273,7 +317,6 @@ export default function MandorDashboard() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-28 font-sans">
       {/* M-Banking Solid Header Background */}
       <div className="absolute top-0 left-0 w-full h-[280px] bg-primary rounded-b-[40px] z-0 shadow-lg overflow-hidden">
-        {/* Decorative elements for header */}
         <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-48 h-48 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
@@ -457,7 +500,8 @@ export default function MandorDashboard() {
           <div className="grid grid-cols-4 gap-3">
             <button
               onClick={() => router.push('/absen')}
-              className="flex flex-col items-center gap-2 group active:scale-95 transition-transform"
+              className="flex flex-col items-center gap-2 group active:scale-95 transition-transform animate-in fade-in slide-in-from-bottom-2 duration-300"
+              style={{ animationDelay: '0ms', animationFillMode: 'both' }}
             >
               <div className="w-14 h-14 rounded-[20px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none flex items-center justify-center transition-transform relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-teal-50/50 dark:from-emerald-900/10 dark:to-teal-900/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -468,7 +512,8 @@ export default function MandorDashboard() {
 
             <button
               onClick={() => router.push('/tugas')}
-              className="flex flex-col items-center gap-2 group active:scale-95 transition-transform"
+              className="flex flex-col items-center gap-2 group active:scale-95 transition-transform animate-in fade-in slide-in-from-bottom-2 duration-300"
+              style={{ animationDelay: '60ms', animationFillMode: 'both' }}
             >
               <div className="w-14 h-14 rounded-[20px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none flex items-center justify-center transition-transform relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50/50 dark:from-blue-900/10 dark:to-indigo-900/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -479,7 +524,8 @@ export default function MandorDashboard() {
 
             <button
               onClick={() => router.push('/riwayat')}
-              className="flex flex-col items-center gap-2 group active:scale-95 transition-transform"
+              className="flex flex-col items-center gap-2 group active:scale-95 transition-transform animate-in fade-in slide-in-from-bottom-2 duration-300"
+              style={{ animationDelay: '120ms', animationFillMode: 'both' }}
             >
               <div className="w-14 h-14 rounded-[20px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none flex items-center justify-center transition-transform relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-fuchsia-50/50 dark:from-purple-900/10 dark:to-fuchsia-900/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -490,7 +536,8 @@ export default function MandorDashboard() {
 
             <button
               onClick={() => router.push('/riwayat-laporan')}
-              className="flex flex-col items-center gap-2 group active:scale-95 transition-transform"
+              className="flex flex-col items-center gap-2 group active:scale-95 transition-transform animate-in fade-in slide-in-from-bottom-2 duration-300"
+              style={{ animationDelay: '180ms', animationFillMode: 'both' }}
             >
               <div className="w-14 h-14 rounded-[20px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none flex items-center justify-center transition-transform relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-violet-50/50 dark:from-indigo-900/10 dark:to-violet-900/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -511,6 +558,7 @@ export default function MandorDashboard() {
             </button>
           </div>
         </div>
+
         {/* Info Banner Auto-Sliding */}
         <div className="mt-6 mb-2 relative overflow-hidden rounded-[20px] shadow-lg">
           <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${activeBanner * 100}%)` }}>
@@ -555,7 +603,7 @@ export default function MandorDashboard() {
             <div className="flex justify-between items-center px-1">
               {['S', 'S', 'R', 'K', 'J', 'S', 'M'].map((day, idx) => {
                 const currentDayRaw = new Date().getDay();
-                const currentDayIdx = currentDayRaw === 0 ? 6 : currentDayRaw - 1; // 0 = Senin, 6 = Minggu
+                const currentDayIdx = currentDayRaw === 0 ? 6 : currentDayRaw - 1;
                 const isToday = idx === currentDayIdx;
                 const isPast = idx < currentDayIdx;
                 const isActive = isPast || (isToday && isClockedIn);
@@ -624,20 +672,22 @@ export default function MandorDashboard() {
                   </div>
                 </div>
 
-                {/* Item 2: Lapor Progres / Pulang */}
+                {/* Item 2: Status Laporan / Pulang */}
                 <div className="relative flex gap-4 items-start">
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 relative z-10 ring-4 ring-white dark:ring-slate-900 ${isClockedOut
                     ? 'bg-blue-500 text-white shadow-sm shadow-blue-500/30'
-                    : 'bg-slate-200 dark:bg-slate-800 text-slate-400'
+                    : hasReportedToday
+                      ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-400'
                     }`}>
-                    {isClockedOut ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                    {isClockedOut || hasReportedToday ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                   </div>
                   <div className="flex-1 pt-0.5">
-                    <p className={`text-xs font-black leading-none mb-1.5 ${isClockedOut ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400'}`}>
-                      {isClockedOut ? 'Selesai Bekerja' : 'Menunggu Laporan'}
+                    <p className={`text-xs font-black leading-none mb-1.5 ${isClockedOut || hasReportedToday ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400'}`}>
+                      {isClockedOut ? 'Selesai Bekerja' : hasReportedToday ? 'Laporan Terkirim' : 'Menunggu Laporan'}
                     </p>
                     <p className="text-[10px] font-bold text-slate-400">
-                      {isClockedOut ? 'Progres harian dilaporkan' : 'Biasanya jam 17:00'}
+                      {isClockedOut ? 'Progres harian dilaporkan' : hasReportedToday ? `${todayTasks.length} laporan dikirim hari ini` : 'Biasanya jam 17:00'}
                     </p>
                   </div>
                   <div className="shrink-0 pt-0.5 text-right">

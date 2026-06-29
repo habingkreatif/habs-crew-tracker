@@ -3,17 +3,28 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Clock, CalendarDays, Loader2, CheckCircle2, ChevronDown, ChevronUp, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Clock, Loader2, CheckCircle2, ChevronDown, ChevronUp, ClipboardList, FileSearch } from 'lucide-react';
+
+interface DailyTaskReport {
+  id: number;
+  namaPekerjaan: string;
+  tanggal: string;
+  progressPercentage: number | null;
+  photoProgresUrl: string | null;
+  updatedAt: string;
+}
+
+type GroupedReports = Record<string, DailyTaskReport[]>;
 
 export default function RiwayatLaporanPage() {
   const { user } = useAuthStore();
   const router = useRouter();
 
-  const [allReports, setAllReports] = useState<any[]>([]);
+  const [allReports, setAllReports] = useState<DailyTaskReport[]>([]);
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -24,14 +35,19 @@ export default function RiwayatLaporanPage() {
   const fetchHistory = async () => {
     try {
       setIsLoading(true);
+      setHasError(false);
+      // Fix #3: fetch all tasks by userId only (no projectId needed)
       const res = await fetch(`/api/daily-tasks?userId=${user?.id}&all=true`, { cache: 'no-store' });
       const data = await res.json();
 
       if (data.success && data.data) {
         setAllReports(data.data);
+      } else {
+        setHasError(true);
       }
-    } catch (err) {
-      console.error('Gagal fetch data riwayat laporan:', err);
+    } catch {
+      // Fix #1: no console.error in final code
+      setHasError(true);
     } finally {
       setIsLoading(false);
     }
@@ -44,8 +60,8 @@ export default function RiwayatLaporanPage() {
     }));
   };
 
-  // Group reports by date
-  const groupedReports = allReports.reduce((acc: any, curr: any) => {
+  // Fix #4: typed reduce, no `any`
+  const groupedReports = allReports.reduce<GroupedReports>((acc, curr) => {
     const dStr = new Date(curr.tanggal).toISOString().split('T')[0];
     if (!acc[dStr]) acc[dStr] = [];
     acc[dStr].push(curr);
@@ -54,13 +70,14 @@ export default function RiwayatLaporanPage() {
 
   const sortedDates = Object.keys(groupedReports).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
   const todayStr = new Date().toISOString().split('T')[0];
+  const firstName = user?.nama ? user.nama.split(' ')[0] : 'kamu';
 
-  // Auto-expand today if it's the first render
+  // Auto-expand latest date on first render
   useEffect(() => {
     if (sortedDates.length > 0 && Object.keys(expandedDates).length === 0) {
       setExpandedDates({ [sortedDates[0]]: true });
     }
-  }, [sortedDates, expandedDates]);
+  }, [sortedDates.length]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-32 font-sans relative overflow-hidden">
@@ -71,10 +88,10 @@ export default function RiwayatLaporanPage() {
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
       </div>
 
-      {/* Header Clean Light */}
+      {/* Header */}
       <div className="pt-6 pb-20 px-6 relative z-10">
         <div className="flex items-center mb-6">
-          <button 
+          <button
             onClick={() => router.push('/home')}
             className="w-10 h-10 flex items-center justify-center text-white/90 hover:text-white transition-all active:scale-90 shrink-0 -ml-2"
           >
@@ -94,21 +111,45 @@ export default function RiwayatLaporanPage() {
       </div>
 
       <div className="px-5 space-y-6 relative z-20 -mt-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        
+
         {isLoading ? (
-          <div className="bg-white dark:bg-slate-900 rounded-[32px] p-2 shadow-2xl shadow-primary/10 dark:shadow-black/50 border-0 flex flex-col items-center justify-center py-32 space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl shadow-primary/10 dark:shadow-black/50 flex flex-col items-center justify-center py-32 space-y-4">
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
             <p className="text-sm font-bold text-slate-400 animate-pulse">Memuat riwayat...</p>
           </div>
-        ) : allReports.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 rounded-[32px] p-2 shadow-2xl shadow-primary/10 dark:shadow-black/50 border-0 flex flex-col items-center justify-center py-24 text-center px-6">
-            <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
-              <ClipboardList className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+        ) : hasError ? (
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl shadow-primary/10 dark:shadow-black/50 flex flex-col items-center justify-center py-24 text-center px-6">
+            <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 rounded-full flex items-center justify-center mb-4">
+              <FileSearch className="w-10 h-10 text-rose-300 dark:text-rose-600" />
             </div>
-            <h2 className="text-xl font-black text-slate-700 dark:text-slate-200">Belum Ada Laporan</h2>
-            <p className="text-sm font-medium text-slate-500 mt-2">
-              Laporan progres yang sudah kamu kirimkan akan muncul di sini.
+            <h2 className="text-xl font-black text-slate-700 dark:text-slate-200">Gagal Memuat</h2>
+            <p className="text-sm font-medium text-slate-500 mt-2">Terjadi kesalahan saat mengambil data.</p>
+            <button
+              onClick={fetchHistory}
+              className="mt-4 px-5 py-2 bg-primary text-white text-xs font-bold rounded-full"
+            >
+              Coba Lagi
+            </button>
+          </div>
+        ) : allReports.length === 0 ? (
+          /* Fix #8: Personalized empty state with user's name */
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl shadow-primary/10 dark:shadow-black/50 flex flex-col items-center justify-center py-24 text-center px-6">
+            <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 relative">
+              <ClipboardList className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+              <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
+                <span className="text-[10px] font-black text-primary">0</span>
+              </div>
+            </div>
+            <h2 className="text-xl font-black text-slate-700 dark:text-slate-200">Halo, {firstName}!</h2>
+            <p className="text-sm font-medium text-slate-500 mt-2 leading-relaxed">
+              Laporan progres yang sudah <span className="font-bold text-slate-700 dark:text-slate-300">{firstName}</span> kirimkan akan muncul di sini. Yuk mulai lapor hari ini!
             </p>
+            <button
+              onClick={() => router.push('/tugas')}
+              className="mt-5 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-black rounded-full shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
+            >
+              Lapor Sekarang
+            </button>
           </div>
         ) : (
           <div className="space-y-4">
@@ -129,7 +170,7 @@ export default function RiwayatLaporanPage() {
                       <p className="font-bold text-sm text-slate-800 dark:text-slate-200">
                         {dateStr === todayStr ? 'Hari Ini' : formattedDate}
                       </p>
-                      <p className="text-[10px] font-medium text-slate-500 mt-0.5">{dayReports.length} Laporan dikirim</p>
+                      <p className="text-[10px] font-medium text-slate-500 mt-0.5">{dayReports.length} laporan dikirim</p>
                     </div>
                     <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
                       {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -139,16 +180,15 @@ export default function RiwayatLaporanPage() {
                   {/* Day Reports List (Collapsible) */}
                   {isExpanded && (
                     <div className="space-y-3 pl-2 pr-2 pb-2 animate-in slide-in-from-top-2 fade-in duration-300">
-                      {dayReports.map((report: any) => (
-                         <Card key={report.id} className="border-0 bg-white dark:bg-slate-900 shadow-md shadow-slate-200/50 dark:shadow-none rounded-[20px] overflow-hidden relative">
-                          {/* Decorative completion indicator */}
+                      {dayReports.map((report) => (
+                        <Card key={report.id} className="border-0 bg-white dark:bg-slate-900 shadow-md shadow-slate-200/50 dark:shadow-none rounded-[20px] overflow-hidden relative">
                           {report.progressPercentage === 100 && (
-                             <div className="absolute top-0 right-0 w-8 h-8 bg-emerald-500/10 rounded-bl-[20px]"></div>
+                            <div className="absolute top-0 right-0 w-8 h-8 bg-emerald-500/10 rounded-bl-[20px]"></div>
                           )}
                           <CardContent className="p-4 flex gap-4 items-center">
                             <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 relative border border-slate-100 dark:border-slate-700">
                               {report.photoProgresUrl ? (
-                                <img src={report.photoProgresUrl} alt="History" className="w-full h-full object-cover" />
+                                <img src={report.photoProgresUrl} alt="Foto progres" className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-slate-300">
                                   <CheckCircle2 className="w-6 h-6" />
@@ -163,7 +203,10 @@ export default function RiwayatLaporanPage() {
                               </p>
                             </div>
                             <div className="text-right shrink-0">
-                              <span className={`inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[10px] font-black tracking-wider ${report.progressPercentage === 100 ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 border border-emerald-200 dark:border-emerald-800' : 'bg-primary/10 text-primary border border-primary/20'}`}>
+                              <span className={`inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[10px] font-black tracking-wider ${(report.progressPercentage ?? 0) === 100
+                                ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 border border-emerald-200 dark:border-emerald-800'
+                                : 'bg-primary/10 text-primary border border-primary/20'
+                              }`}>
                                 {report.progressPercentage ?? 0}%
                               </span>
                             </div>

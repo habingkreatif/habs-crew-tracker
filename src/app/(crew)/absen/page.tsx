@@ -29,17 +29,41 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
+interface Project {
+  id: number;
+  namaProyek: string;
+  latitude: number;
+  longitude: number;
+  radiusMeter: number;
+}
+
+interface TodayAttendance {
+  id: number;
+  projectId: number;
+  clockIn: string;
+  clockOut: string | null;
+  photoSelfieUrl: string;
+}
+
+interface DailyTask {
+  id: number;
+  tanggal: string;
+  progressPercentage: number | null;
+}
+
 export default function AbsenPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { coords, error: gpsError, isLoading: isLoadingGps, getLocation } = useGeolocation();
-  const { videoRef, photoUrl, photoFile, startCamera, takePhoto, retakePhoto, isStreaming, error: camError } = useCamera('user'); // Gunakan kamera depan
+  const { videoRef, photoUrl, photoFile, startCamera, takePhoto, retakePhoto, isStreaming, error: camError } = useCamera('user');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [projects, setProjects] = useState<any[]>([]);
+
+  const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
 
-  const [todayAttendance, setTodayAttendance] = useState<any>(null);
+  const [todayAttendance, setTodayAttendance] = useState<TodayAttendance | null>(null);
+  const [todayTasks, setTodayTasks] = useState<DailyTask[]>([]);
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(true);
 
   const selectedProject = projects.find(p => String(p.id) === selectedProjectId);
@@ -72,9 +96,22 @@ export default function AbsenPage() {
       const data = await res.json();
       if (data.success && data.data) {
         setTodayAttendance(data.data);
+
+        // Cek tugas hari ini agar tombol Pulang bisa diverifikasi
+        const resTask = await fetch(`/api/daily-tasks?userId=${user?.id}&projectId=${data.data.projectId}&all=true`, { cache: 'no-store' });
+        const dataTask = await resTask.json();
+
+        if (dataTask.success && dataTask.data) {
+          const todayStr = new Date().toISOString().split('T')[0];
+          const hasToday = dataTask.data.filter((r: DailyTask) => {
+            const rDate = new Date(r.tanggal).toISOString().split('T')[0];
+            return rDate === todayStr;
+          });
+          setTodayTasks(hasToday);
+        }
       }
-    } catch (err) {
-      console.error('Gagal fetch absen:', err);
+    } catch {
+      // ignore
     } finally {
       setIsLoadingAttendance(false);
     }
@@ -87,15 +124,15 @@ export default function AbsenPage() {
       if (data.success) {
         setProjects(data.data);
       }
-    } catch (err) {
-      console.error('Gagal fetch projects:', err);
+    } catch {
+      // ignore
     } finally {
       setIsLoadingProjects(false);
     }
   };
 
   const handleClockIn = async () => {
-    if (!coords || !photoFile || !user || !selectedProjectId) {
+    if (!coords || !photoFile || !user || !selectedProject) {
       toast.error('Data belum lengkap', { description: 'Pastikan lokasi, foto, dan proyek sudah dipilih.' });
       return;
     }
@@ -127,8 +164,9 @@ export default function AbsenPage() {
 
       toast.success('Absen Berhasil!', { description: 'Selamat bekerja!' });
       setTodayAttendance(data.data);
-    } catch (err: any) {
-      toast.error('Gagal Absen', { description: err.message });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Terjadi kesalahan';
+      toast.error('Gagal Absen', { description: msg });
     } finally {
       setIsSubmitting(false);
     }
@@ -153,9 +191,10 @@ export default function AbsenPage() {
 
       toast.success('Absen Pulang Berhasil!', { description: 'Hati-hati di jalan pulang.' });
       setTodayAttendance(data.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Terjadi kesalahan';
       toast.error('Peringatan Absen Pulang', {
-        description: err.message,
+        description: msg,
         duration: 8000
       });
     } finally {
@@ -271,22 +310,24 @@ export default function AbsenPage() {
               <Button
                 size="lg"
                 className="w-full h-14 rounded-[20px] text-base font-bold bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white shadow-lg shadow-rose-500/20 active:scale-95 transition-all"
-                disabled={isSubmitting}
+                disabled={isSubmitting || todayTasks.length === 0}
                 onClick={handleClockOut}
               >
                 {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <LogOut className="w-4 h-4 mr-2" />}
                 Akhiri Sesi Kerja (Pulang)
               </Button>
-              <div className="bg-gradient-to-r from-rose-50 to-white dark:from-rose-950/30 dark:to-slate-900 text-rose-600 dark:text-rose-400 text-xs font-medium p-4 rounded-2xl border border-rose-100 dark:border-rose-900/50 flex gap-3 items-start shadow-sm">
-                <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5 text-rose-500" />
-                <p>Anda hanya bisa absen pulang jika sudah mengirim laporan progres pekerjaan hari ini.</p>
-              </div>
+              {todayTasks.length === 0 && (
+                <div className="bg-gradient-to-r from-amber-50 to-white dark:from-amber-950/30 dark:to-slate-900 text-amber-600 dark:text-amber-500 text-xs font-medium p-4 rounded-2xl border border-amber-100 dark:border-amber-900/50 flex gap-3 items-start shadow-sm">
+                  <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5 text-amber-500" />
+                  <p>Anda belum mengirim laporan progres. Harap lapor target & progres pekerjaan hari ini terlebih dahulu.</p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center pt-8">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tercatat Pulang Pada</p>
               <p className="text-2xl font-black text-slate-800 dark:text-slate-200 mt-1">
-                {new Date(todayAttendance.clockOut).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                {new Date(todayAttendance.clockOut!).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
           )}

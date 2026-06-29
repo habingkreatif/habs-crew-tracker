@@ -4,37 +4,31 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, User, Lock, BookOpen, HeadphonesIcon, LogOut, ChevronRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, Lock, BookOpen, HeadphonesIcon, LogOut, ChevronRight, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ProfilPage() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   
   const supabase = createClient();
 
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
+      setShowLogoutConfirm(false);
       
-      // 1. Matikan sesi di Supabase
       const { error } = await supabase.auth.signOut();
+      if (error) throw error;
       
-      if (error) {
-        throw error;
-      }
-      
-      // 2. Bersihkan state lokal Zustand
       logout();
-      
       toast.success('Berhasil keluar akun');
-      
-      // 3. Arahkan kembali ke login
       router.replace('/login');
-    } catch (error: any) {
-      console.error('Error logging out:', error);
-      toast.error('Gagal keluar: ' + (error.message || 'Terjadi kesalahan'));
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Terjadi kesalahan';
+      toast.error('Gagal keluar: ' + msg);
       setIsLoggingOut(false);
     }
   };
@@ -150,7 +144,7 @@ export default function ProfilPage() {
         {/* Logout Section */}
         <div className="mt-auto">
           <button 
-            onClick={handleLogout}
+            onClick={() => setShowLogoutConfirm(true)}
             disabled={isLoggingOut}
             className="w-full h-14 bg-white dark:bg-slate-900 text-red-600 dark:text-red-500 font-extrabold rounded-[24px] flex items-center justify-center gap-2 border border-red-100 dark:border-red-900/30 shadow-xl shadow-red-500/5 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-50 dark:hover:bg-red-900/10 relative overflow-hidden"
           >
@@ -171,6 +165,39 @@ export default function ProfilPage() {
           </p>
         </div>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[32px] p-6 shadow-2xl animate-in slide-in-from-bottom-4 duration-300">
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-4">
+                <AlertTriangle className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">Keluar Akun?</h3>
+              <p className="text-sm font-medium text-slate-500 mt-2 leading-relaxed">
+                Kamu yakin mau keluar dari akun <span className="font-bold text-slate-700 dark:text-slate-300">{user?.nama?.split(' ')[0]}</span>? Kamu perlu login lagi untuk masuk.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 h-12 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-[16px] text-sm active:scale-95 transition-transform"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="flex-1 h-12 bg-red-500 text-white font-bold rounded-[16px] text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-70 shadow-lg shadow-red-500/20"
+              >
+                {isLoggingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+                {isLoggingOut ? 'Keluar...' : 'Ya, Keluar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

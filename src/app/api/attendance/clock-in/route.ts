@@ -41,10 +41,11 @@ export async function POST(req: NextRequest) {
     );
 
     return apiSuccess(attendance, 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof DomainError) {
       return apiError(error.message, error.code, 400);
     }
-    return apiError(error.message);
+    const msg = error instanceof Error ? error.message : 'Terjadi kesalahan internal';
+    return apiError(msg);
   }
 }
