@@ -15,7 +15,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Camera, RefreshCcw, Loader2, Building2, CheckCircle2, LogOut, ArrowRight, ShieldCheck, Map, Clock, Navigation } from 'lucide-react';
+import { Camera, RefreshCcw, Loader2, Building2, CheckCircle2, LogOut, ArrowRight, ShieldCheck, Map, Clock, Navigation, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 // Helper calculate distance client-side for UI feedback
@@ -63,7 +63,7 @@ export default function AbsenPage() {
       getLocation();
       startCamera();
     }
-  }, [todayAttendance, isLoadingAttendance]); // Removed dependencies that cause loops
+  }, [todayAttendance, isLoadingAttendance]);
 
   const fetchTodayAttendance = async () => {
     try {
@@ -179,32 +179,39 @@ export default function AbsenPage() {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-32 font-sans relative overflow-hidden">
         {/* M-Banking Solid Header Background */}
-        <div className="absolute top-0 left-0 w-full h-[250px] bg-primary rounded-b-[40px] z-0 shadow-lg overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-[240px] bg-primary rounded-b-[40px] z-0 shadow-lg overflow-hidden">
           <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
           <div className="absolute bottom-[-10%] left-[-10%] w-48 h-48 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
           <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
         </div>
 
         {/* Header Clean Light */}
-        <div className="pt-12 pb-24 px-6 relative z-10">
+        <div className="pt-6 pb-20 px-6 relative z-10">
+          <div className="flex items-center mb-6">
+            <button
+              onClick={() => router.push('/home')}
+              className="w-10 h-10 flex items-center justify-center text-white/90 hover:text-white transition-all active:scale-90 shrink-0 -ml-2"
+            >
+              <ArrowLeft className="w-7 h-7 stroke-[2.5px] drop-shadow-md" />
+            </button>
+            <h1 className="text-lg font-extrabold text-white ml-1 drop-shadow-md tracking-tight">Detail Kehadiran</h1>
+          </div>
           <header className="flex justify-between items-start">
             <div>
-              <p className="text-white/80 font-bold tracking-widest text-[10px] mb-1 uppercase drop-shadow-sm">Status Kehadiran</p>
-              <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-md">Presensi Aktif</h1>
+              <p className="text-white/80 font-bold tracking-widest text-[10px] mb-1 uppercase drop-shadow-sm">Status Hari Ini</p>
+              <h1 className="text-2xl font-black tracking-tight text-white drop-shadow-md">Presensi Aktif</h1>
             </div>
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center border shadow-sm backdrop-blur-md ${isClockedOut ? 'bg-white/20 border-white/30 text-white' : 'bg-emerald-500 border-emerald-400 text-white shadow-emerald-500/50'}`}>
-              <CheckCircle2 className="w-6 h-6" />
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center border shadow-sm backdrop-blur-md shrink-0 ${isClockedOut ? 'bg-white/20 border-white/30 text-white' : 'bg-white text-emerald-600 border-white/10 shadow-black/10'}`}>
+              <CheckCircle2 className="w-6 h-6 stroke-[2.5px]" />
             </div>
           </header>
         </div>
 
-        <div className="px-5 space-y-6 relative z-20 -mt-16">
+        <div className="px-5 space-y-6 relative z-20 -mt-10">
           {/* Clean Receipt / Boarding Pass UI */}
-          <div className="relative mx-auto max-w-sm drop-shadow-xl shadow-primary/5">
+          <div className="relative mx-auto max-w-sm drop-shadow-[0_15px_30px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_15px_30px_rgba(0,0,0,0.5)]">
             {/* Top Receipt */}
             <div className="bg-white dark:bg-slate-900 p-7 rounded-[32px] rounded-b-none border-0 shadow-lg shadow-slate-200/50 dark:shadow-black/20 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2"></div>
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-blue-400 to-emerald-400"></div>
               <div className="flex justify-between items-start mb-6 relative z-10">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-1">
@@ -290,31 +297,41 @@ export default function AbsenPage() {
 
   // === UI PRE-ABSEN (BELUM ABSEN) ===
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-32 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-40 font-sans relative overflow-hidden">
       {/* M-Banking Solid Header Background */}
-      <div className="absolute top-0 left-0 w-full h-[250px] bg-primary rounded-b-[40px] z-0 shadow-lg overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-[240px] bg-primary rounded-b-[40px] z-0 shadow-lg overflow-hidden">
         <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-48 h-48 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
       </div>
 
       {/* Header Clean Light */}
-      <div className="pt-12 pb-24 px-6 relative z-10">
+      <div className="pt-6 pb-20 px-6 relative z-10">
+        <div className="flex items-center mb-6">
+          <button
+            onClick={() => router.push('/home')}
+            className="w-10 h-10 flex items-center justify-center text-white/90 hover:text-white transition-all active:scale-90 shrink-0 -ml-2"
+          >
+            <ArrowLeft className="w-7 h-7 stroke-[2.5px] drop-shadow-md" />
+          </button>
+          <h1 className="text-lg font-extrabold text-white ml-1 drop-shadow-md tracking-tight">Absen Masuk</h1>
+        </div>
         <header className="flex justify-between items-start">
           <div>
             <p className="text-white/80 font-bold tracking-widest text-[10px] mb-1 uppercase drop-shadow-sm">Mulai Sesi Kerja</p>
-            <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-md">Absen Masuk</h1>
+            <p className="text-white font-medium text-xs leading-relaxed max-w-[240px] mt-1 drop-shadow-sm">
+              Pastikan Anda berada di lokasi proyek dan wajah terlihat jelas.
+            </p>
           </div>
-          <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 text-white shadow-sm">
-            <Navigation className="w-5 h-5" />
+          <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 text-white shadow-sm shrink-0">
+            <Navigation className="w-5 h-5 stroke-[2.5px]" />
           </div>
         </header>
       </div>
 
-      <div className="px-5 space-y-6 relative z-20 -mt-16">
+      <div className="px-5 space-y-5 relative z-20 -mt-10">
         {/* Project Selector Card */}
         <Card className="border-0 shadow-xl shadow-slate-200/50 dark:shadow-black/30 bg-white dark:bg-slate-900 rounded-[28px] overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-[100px] pointer-events-none"></div>
           <CardContent className="p-6 relative z-10">
             <div className="space-y-4">
               <div className="flex justify-between items-end">
@@ -324,19 +341,19 @@ export default function AbsenPage() {
               </div>
 
               {isLoadingProjects ? (
-                <div className="h-14 rounded-2xl bg-slate-100/50 flex items-center px-4 animate-pulse border border-slate-100">
+                <div className="h-12 rounded-xl bg-slate-100/50 flex items-center px-4 animate-pulse border border-slate-100">
                   <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
                 </div>
               ) : (
                 <Select value={selectedProjectId} onValueChange={v => setSelectedProjectId(v || '')}>
-                  <SelectTrigger className="h-14 text-base px-5 font-bold border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-primary/30 bg-slate-50 dark:bg-slate-950/50 shadow-inner">
+                  <SelectTrigger className="h-12 text-sm px-4 font-semibold border-slate-200 dark:border-slate-800 rounded-xl focus:ring-primary/30 bg-slate-50 dark:bg-slate-950/50 shadow-inner">
                     <div className="flex-1 text-left truncate">
-                      {selectedProject ? selectedProject.namaProyek : <span className="text-muted-foreground">Pilih proyek tempat bekerja...</span>}
+                      {selectedProject ? selectedProject.namaProyek : <span className="text-slate-400 font-normal">Pilih proyek tempat bekerja...</span>}
                     </div>
                   </SelectTrigger>
-                  <SelectContent className="rounded-2xl">
+                  <SelectContent className="rounded-xl">
                     {projects.map(p => (
-                      <SelectItem key={p.id} value={String(p.id)} className="font-semibold py-3">{p.namaProyek}</SelectItem>
+                      <SelectItem key={p.id} value={String(p.id)} className="font-medium py-2.5 text-sm">{p.namaProyek}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -394,15 +411,15 @@ export default function AbsenPage() {
                       playsInline
                       muted
                       className="w-full h-full object-cover"
-                      style={{ transform: 'scaleX(-1)' }} 
+                      style={{ transform: 'scaleX(-1)' }}
                     />
-                    
+
                     {!isStreaming && !camError && (
                       <div className="absolute inset-0 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm">
                         <Loader2 className="w-8 h-8 text-white animate-spin" />
                       </div>
                     )}
-                    
+
                     {camError && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white bg-slate-950/90 backdrop-blur-sm">
                         <Camera className="w-10 h-10 mb-3 text-rose-500 opacity-80" />
@@ -443,26 +460,26 @@ export default function AbsenPage() {
           </Card>
         )}
 
-        {/* Submit Action */}
-        <div className="pt-4">
-          <Button
-            size="lg"
-            className={`w-full h-16 rounded-[24px] text-lg font-black transition-all duration-300 ${(!coords || !photoUrl || !selectedProjectId || !isWithinRadius) ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed shadow-inner' : 'bg-gradient-to-r from-primary to-blue-600 shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 text-white'}`}
-            disabled={!coords || !photoUrl || !selectedProjectId || !isWithinRadius || isSubmitting}
-            onClick={handleClockIn}
-          >
-            {isSubmitting ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : !isWithinRadius && selectedProject && coords ? (
-              'Di Luar Radius Proyek'
-            ) : (
-              <>
-                Absen Masuk <ArrowRight className="w-4 h-4 ml-2" />
-              </>
-            )}
-          </Button>
-        </div>
+      </div>
 
+      {/* Submit Action (Fixed at Bottom) */}
+      <div className="fixed bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-white via-white to-transparent dark:from-slate-950 dark:via-slate-950 z-40 pb-safe">
+        <Button
+          size="lg"
+          className={`w-full h-16 rounded-[20px] text-lg font-black transition-all duration-300 ${(!coords || !photoUrl || !selectedProjectId || !isWithinRadius) ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700 shadow-none' : 'bg-primary hover:bg-primary/90 shadow-[0_10px_40px_-10px_rgba(20,184,166,0.6)] hover:scale-[1.02] active:scale-95 text-white'}`}
+          disabled={!coords || !photoUrl || !selectedProjectId || !isWithinRadius || isSubmitting}
+          onClick={handleClockIn}
+        >
+          {isSubmitting ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : !isWithinRadius && selectedProject && coords ? (
+            'Di Luar Radius Proyek'
+          ) : (
+            <>
+              Absen Masuk <ArrowRight className="w-4 h-4 ml-2" />
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );
