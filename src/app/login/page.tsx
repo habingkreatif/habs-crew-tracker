@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
   const supabase = createClient();
@@ -65,7 +65,7 @@ export default function LoginPage() {
         });
 
         if (role === 'ADMIN' || role === 'SUPERADMIN') {
-          router.push('/admin');
+          router.push('/home');
         } else {
           router.push('/home');
         }
@@ -81,7 +81,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col h-full w-full justify-between lg:justify-center overflow-x-hidden relative">
-      
+
       {/* Decorative Blobs for Desktop Glassmorphism Effect */}
       <div className="hidden lg:block absolute top-[10%] left-[20%] w-72 h-72 bg-emerald-400/20 rounded-full blur-[80px] pointer-events-none"></div>
       <div className="hidden lg:block absolute bottom-[10%] right-[20%] w-80 h-80 bg-blue-500/10 rounded-full blur-[100px] pointer-events-none"></div>
@@ -96,14 +96,14 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full bg-white/95 dark:bg-slate-900/95 lg:bg-white/60 lg:dark:bg-slate-900/60 backdrop-blur-2xl rounded-t-[40px] rounded-b-none lg:rounded-[32px] overflow-hidden relative flex-1 lg:flex-initial flex flex-col pt-4 pb-8 lg:p-12 animate-in slide-in-from-bottom-8 duration-700 lg:max-w-[460px] lg:mx-auto lg:shadow-[0_24px_80px_rgba(0,0,0,0.06)] border-t border-white/50 lg:border lg:border-white/60 dark:border-white/10 z-20">
-        
+
         {/* Pull Indicator for Mobile */}
         <div className="w-12 h-1.5 bg-slate-300/50 dark:bg-slate-700 rounded-full mx-auto mb-8 lg:hidden"></div>
 
         {/* Desktop Header */}
         <div className="text-center pb-8 relative z-10 hidden lg:block">
           <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-slate-100 dark:border-slate-700">
-             <User className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+            <User className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
           </div>
           <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white mb-2">Otorisasi Sistem</h2>
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
@@ -113,7 +113,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="relative z-10 flex-1 flex flex-col justify-center lg:justify-start w-full px-8 lg:px-0 mt-4 lg:mt-0">
           <div className="space-y-6 flex-1 lg:flex-initial">
-            
+
             {/* Floating Label Username */}
             <div className="relative group">
               <input
@@ -125,8 +125,8 @@ export default function LoginPage() {
                 className="block px-4 pb-3 pt-7 w-full text-base font-bold text-slate-900 dark:text-white bg-slate-50/50 dark:bg-slate-950/50 rounded-2xl border-2 border-slate-200/60 dark:border-slate-800 appearance-none focus:outline-none focus:ring-0 focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-900 peer transition-all shadow-sm"
                 placeholder=" "
               />
-              <label 
-                htmlFor="username" 
+              <label
+                htmlFor="username"
                 className="absolute text-sm font-bold text-slate-400 dark:text-slate-500 duration-300 transform -translate-y-3 scale-75 top-4 z-10 origin-[0] left-4 peer-focus:text-emerald-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-3 cursor-text pointer-events-none"
               >
                 Username / NIP
@@ -147,8 +147,8 @@ export default function LoginPage() {
                 className="block px-4 pb-3 pt-7 w-full text-base font-bold text-slate-900 dark:text-white bg-slate-50/50 dark:bg-slate-950/50 rounded-2xl border-2 border-slate-200/60 dark:border-slate-800 appearance-none focus:outline-none focus:ring-0 focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-900 peer transition-all shadow-sm pr-12"
                 placeholder=" "
               />
-              <label 
-                htmlFor="password" 
+              <label
+                htmlFor="password"
                 className="absolute text-sm font-bold text-slate-400 dark:text-slate-500 duration-300 transform -translate-y-3 scale-75 top-4 z-10 origin-[0] left-4 peer-focus:text-emerald-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-3 cursor-text pointer-events-none"
               >
                 PIN / Password
@@ -182,7 +182,7 @@ export default function LoginPage() {
                 </span>
               )}
             </Button>
-            
+
             <p className="text-xs font-bold text-center text-slate-400 dark:text-slate-500">
               Lupa PIN/Password? <a href="#" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 transition-colors">Hubungi CS Proyek</a>
             </p>
