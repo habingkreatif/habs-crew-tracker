@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, Users, Building2, LogOut, Menu, FileText, Banknote, Shield, X } from 'lucide-react';
+import { LayoutDashboard, Users, Building2, LogOut, FileText, Banknote, Shield, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
@@ -16,7 +16,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const supabase = createClient();
 
   const [isHydrated, setIsHydrated] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -58,35 +57,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row">
-      {/* Mobile Header (Sticky) */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm sticky top-0 z-30">
-        <h1 className="text-xl font-black tracking-tighter text-primary">Habs Crew</h1>
-        <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(true)}>
-          <Menu className="w-5 h-5" />
-        </Button>
-      </div>
-
-      {/* Mobile Backdrop */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 md:hidden transition-opacity"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
+    <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row">
+      {/* Mobile Dynamic Header (Only shows if NOT on dashboard root) */}
+      {pathname !== '/' && (
+        <div className="md:hidden flex items-center p-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 shadow-sm sticky top-0 z-30 animate-in fade-in slide-in-from-top-4">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-3 hover:bg-slate-100 dark:hover:bg-slate-800">
+            <ChevronLeft className="w-6 h-6 text-slate-700 dark:text-slate-300" />
+          </Button>
+          <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white truncate flex-1">
+            {menuItems.find(m => pathname.startsWith(m.href) && m.href !== '/')?.name || 'Habs Crew'}
+          </h1>
+        </div>
       )}
 
-      {/* Sidebar Drawer */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl md:shadow-sm
-        transform transition-transform duration-300 ease-in-out
-        md:relative md:translate-x-0
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="p-6 flex items-center justify-between md:justify-center border-b border-slate-200 dark:border-slate-800">
-          <h1 className="text-xl font-black tracking-tighter text-primary">Habs Crew</h1>
-          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
-            <X className="w-5 h-5" />
-          </Button>
+      {/* Sidebar Desktop (Hidden on Mobile) */}
+      <aside className="hidden md:flex inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col shadow-sm relative">
+        <div className="p-6 flex items-center justify-center border-b border-slate-200 dark:border-slate-800">
+          <h1 className="text-2xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500">
+            Habs Crew
+          </h1>
         </div>
 
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
@@ -97,12 +86,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             const Icon = item.icon;
             const isActive = pathname === item.href;
             return (
-              <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
+              <Link key={item.name} href={item.href}>
                 <Button 
                   variant={isActive ? "secondary" : "ghost"} 
-                  className={`w-full justify-start ${isActive ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'text-slate-600 dark:text-slate-400'}`}
+                  className={`w-full justify-start ${isActive ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}
                 >
-                  <Icon className="w-4 h-4 mr-3" />
+                  <Icon className="w-5 h-5 mr-3" />
                   {item.name}
                 </Button>
               </Link>
@@ -112,23 +101,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <div className="p-4 border-t border-slate-200 dark:border-slate-800">
           <div className="flex items-center space-x-3 mb-4 px-2">
-            <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white flex items-center justify-center font-bold shadow-md">
               {user?.nama?.charAt(0).toUpperCase() || 'A'}
             </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-semibold truncate">{user?.nama}</p>
-              <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+            <div className="overflow-hidden flex-1">
+              <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user?.nama}</p>
+              <p className="text-xs font-medium text-slate-500 truncate">{user?.email}</p>
             </div>
           </div>
-          <Button variant="outline" className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleLogout}>
+          <Button variant="outline" className="w-full justify-start text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/20" onClick={handleLogout}>
             <LogOut className="w-4 h-4 mr-3" />
-            Keluar
+            Keluar Sistem
           </Button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-6 lg:p-10 max-w-7xl mx-auto w-full animate-in-up">
+      <main className="flex-1 p-0 md:p-6 lg:p-10 w-full animate-in fade-in duration-500 relative pb-24 md:pb-10">
         {children}
       </main>
     </div>
