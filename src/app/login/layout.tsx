@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function LoginLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex w-full bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-[100dvh] flex w-full bg-slate-50 dark:bg-slate-950">
       {/* Left side - Branding/Image (Hidden on mobile) */}
       <div className="hidden lg:flex flex-1 relative bg-slate-900 items-center justify-center overflow-hidden">
         {/* Background Image with Overlay */}
@@ -41,7 +41,7 @@ export default function LoginLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex flex-col relative bg-primary lg:bg-slate-50 dark:lg:bg-slate-950">
+      <div className="flex-1 flex flex-col relative bg-primary lg:bg-slate-50 dark:lg:bg-slate-950 overflow-x-hidden">
         {/* Mobile Background Accents */}
         <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[40%] bg-white/10 rounded-full blur-[80px] pointer-events-none lg:hidden" />
         <div className="absolute top-[20%] left-[-20%] w-[50%] h-[50%] bg-blue-500/20 rounded-full blur-[80px] pointer-events-none lg:hidden" />
@@ -50,7 +50,7 @@ export default function LoginLayout({ children }: { children: React.ReactNode })
         <div className="absolute inset-0 opacity-10 lg:hidden bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] pointer-events-none mix-blend-overlay"></div>
 
         <main className="w-full flex-1 flex flex-col relative z-10 lg:items-center lg:justify-center sm:p-12">
-          <div className="w-full max-w-[420px] h-full flex flex-col">
+          <div className="w-full max-w-[420px] mx-auto h-full flex flex-col">
             {children}
           </div>
         </main>
