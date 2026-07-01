@@ -663,14 +663,49 @@ export default function ReportsPage() {
 
                 {/* Dot Indicators — Instagram style */}
                 {report.tasks.length > 0 && (
-                  <div className="flex justify-center gap-1.5 py-2.5">
-                    {report.tasks.map((_, i) => {
+                  <div className="flex justify-center items-center gap-1.5 py-2.5">
+                    {(() => {
+                      const total = report.tasks.length;
                       const activeIndex = activeSlides[report.userId] ?? 0;
-                      const isActive = i === activeIndex;
-                      return (
-                        <div key={i} className={`rounded-full transition-all duration-300 ${isActive ? 'w-3.5 h-1.5 bg-blue-500' : 'w-1.5 h-1.5 bg-slate-300 dark:bg-slate-600'}`} />
-                      );
-                    })}
+                      
+                      // Jika laporan sedikit (<= 5), tampilkan semua titik secara normal
+                      if (total <= 5) {
+                        return report.tasks.map((_, i) => (
+                          <div key={i} className={`rounded-full transition-all duration-300 ${i === activeIndex ? 'w-3.5 h-1.5 bg-blue-500' : 'w-1.5 h-1.5 bg-slate-300 dark:bg-slate-600'}`} />
+                        ));
+                      }
+
+                      // Logika Jendela Geser (Sliding Window) ala Instagram jika laporan banyak
+                      const visibleDots = 5;
+                      let start = Math.max(0, activeIndex - 2);
+                      let end = start + visibleDots - 1;
+                      
+                      // Jaga agar window tidak melebihi batas indeks
+                      if (end >= total) {
+                        end = total - 1;
+                        start = Math.max(0, end - visibleDots + 1);
+                      }
+
+                      return Array.from({ length: total }).map((_, i) => {
+                        const isActive = i === activeIndex;
+                        const isVisible = i >= start && i <= end;
+                        // Titik yang ada di paling pinggir window dibuat mengecil
+                        const isEdge = (i === start && start > 0) || (i === end && end < total - 1);
+                        
+                        if (!isVisible) return null;
+
+                        return (
+                          <div 
+                            key={i} 
+                            className={`rounded-full transition-all duration-300 ${
+                              isActive ? 'w-3.5 h-1.5 bg-blue-500' : 
+                              isEdge ? 'w-1 h-1 bg-slate-300 dark:bg-slate-600 opacity-60' : 
+                              'w-1.5 h-1.5 bg-slate-300 dark:bg-slate-600'
+                            }`} 
+                          />
+                        );
+                      });
+                    })()}
                   </div>
                 )}
 
